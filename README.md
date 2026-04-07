@@ -129,13 +129,27 @@ The framework is designed to easily extend to the other 5 domains using the same
 - Docker (for containerized deployment)
 - Hugging Face account with Spaces access
 
-### Environment Variables
-Set these before running:
-```bash
-export API_BASE_URL="https://api.openai.com/v1"
-export MODEL_NAME="gpt-4"
-export OPENAI_API_KEY="your_openai_api_key"
-```
+### OpenAI API Setup
+The inference script uses OpenAI API for automated grading of teaching quality.
+
+1. **Get OpenAI API Access**:
+   - Sign up at [platform.openai.com](https://platform.openai.com)
+   - Generate an API key from your dashboard
+   - Add credits to your account ($5-10 recommended for testing)
+
+2. **Set Environment Variables**:
+   ```bash
+   export API_BASE_URL="https://api.openai.com/v1"
+   export MODEL_NAME="gpt-4o-mini"  # or "gpt-4" for better quality
+   export OPENAI_API_KEY="your-actual-api-key-here"
+   ```
+
+   **Alternative**: Create a `.env` file in the project root:
+   ```
+   API_BASE_URL=https://api.openai.com/v1
+   MODEL_NAME=gpt-4o-mini
+   OPENAI_API_KEY=your-actual-api-key-here
+   ```
 
 ### Installation
 ```bash
