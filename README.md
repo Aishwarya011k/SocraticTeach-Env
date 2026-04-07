@@ -1,199 +1,294 @@
-# SocraticTeach-Env
+# 🧠 SocraticTeach-Env
 
-An OpenEnv reinforcement learning environment for training AI teachers using the Socratic method. The environment simulates teaching across multiple domains to students who start with misconceptions, rewarding agents for guiding questions that resolve misunderstandings without directly stating answers.
+> An OpenEnv RL environment that trains AI agents to become effective teachers using the Socratic method — guiding students through questions rather than providing direct answers.
 
-## Motivation
+---
 
-Traditional AI tutoring systems often provide direct answers, limiting long-term learning. This environment trains agents to use the Socratic method — asking guiding questions to help students discover concepts themselves. This approach:
+## 📌 What Is This?
 
-- Builds deeper understanding through active learning
-- Develops critical thinking skills
-- Mirrors real-world teaching scenarios
-- Encourages pedagogical skill development in AI
+Most AI agents are trained to **solve problems for themselves**.
 
-The environment addresses the challenge of creating AI tutors that teach effectively without "spoon-feeding" answers, focusing on the art of questioning and guidance.
+SocraticTeach-Env flips this entirely — the agent's job is to **make someone else smarter**.
 
-## Curriculum Domains
+The AI teacher must ask guiding questions, give hints, and use analogies to help a simulated student overcome a specific misconception. If the teacher directly states the answer, it gets penalized. The only way to score high is to genuinely teach.
 
-SocraticTeach-Env supports teaching across 6 domains with researched misconception profiles:
+> **No existing OpenEnv environment trains a teacher agent using reinforcement learning. This is a completely unoccupied niche.**
 
-### Computer Science
-- **L1**: Loops, lists, base cases
-- **L2**: Recursion, functions, sorting  
-- **L3**: Trees, binary search, algorithms
-- **Novel Mechanic**: Misconception profiles from CS education research (off-by-one, infinite loop belief)
+---
 
-### Law
-- **L1**: Contract basics, offer & acceptance
-- **L2**: Tort, negligence, liability
-- **L3**: Constitutional reasoning, precedent
-- **Novel Mechanic**: IRAC completion grader (Issue/Rule/Application/Conclusion). Counterargument injection
+## 🎯 Problem Statement Match
 
-### Medicine
-- **L1**: Vital signs, triage basics
-- **L2**: Differential diagnosis
-- **L3**: Drug interactions, clinical bias
-- **Novel Mechanic**: Symptom Reveal Loop mechanic. Premature Closure Detection as a named cognitive error.
+| Requirement | How We Meet It |
+|---|---|
+| Mini-game RL environment | ✅ Multi-turn teaching session (10 turns per episode) |
+| Clearly defined tasks | ✅ 9 topics × 3 difficulty levels, each with a named misconception |
+| Automated graders | ✅ Pure Python MCQ quiz comparison — zero ambiguity |
+| Reward logic | ✅ Weighted multi-component formula with anti-cheat mechanism |
+| OpenEnv packaging | ✅ Full OpenEnv compliance, HF Spaces ready |
 
-### Ethics & Philosophy
-- **L1**: Trolley problem, basic frameworks
-- **L2**: Applied dilemmas (self-driving cars)
-- **L3**: Institutional ethics (resource rationing)
-- **Novel Mechanic**: Principle Consistency Test — checks if student applies their chosen framework consistently across scenarios.
+---
 
-### Finance & Economics
-- **L1**: Interest, inflation, opportunity cost
-- **L2**: Sunk cost fallacy, risk vs. return
-- **L3**: Base rate neglect, portfolio theory
-- **Novel Mechanic**: Intuition Trap Setup — student has strong but wrong gut-feeling. Counterfactual Questioning forced mechanic.
+## 🔄 Episode Flow
 
-### History
-- **L1**: Single-cause events
-- **L2**: Multi-causal events, correlation vs. causation
-- **L3**: Counterfactual history, structural causes
-- **Novel Mechanic**: Transfer Learning Quiz — post-quiz uses structurally isomorphic scenario, not same content. Tests real reasoning transfer.
+```
+reset()
+  └─→ Topic assigned based on difficulty
+  └─→ Student initialized with specific misconception
+  └─→ Pre-quiz run (5 MCQ questions) → pre_quiz_score recorded
+  └─→ Returns initial observation
 
-## Current Implementation
+step() × 10 turns
+  └─→ Teacher sends a message (question / hint / analogy)
+  └─→ Student simulator responds
+  └─→ Confusion score updated
+  └─→ Misconception resolution checked
+  └─→ Per-turn reward returned
 
-This submission implements the **Computer Science domain** as a complete, working proof-of-concept with:
-- 9 topics across 3 difficulty levels
-- Full OpenEnv compliance
-- HF Spaces deployment ready
-- Comprehensive testing and validation
+After turn 10
+  └─→ Post-quiz runs automatically
+  └─→ Final reward calculated
+  └─→ done = True
+```
 
-The framework is designed to easily extend to the other 5 domains using the same architecture.
+---
 
-## Environment Description
+## 📥 Observation Space
 
-**Task**: Train AI agents to teach computer science topics using Socratic questioning rather than direct instruction. The agent must ask guiding questions and hints to help a simulated student overcome specific misconceptions.
+What the AI teacher **sees** at each step:
 
-**Real-world Application**: This environment models educational tutoring scenarios, where effective teaching requires understanding student confusion and providing targeted guidance rather than rote answers.
+| Field | Type | Description |
+|---|---|---|
+| `topic` | str | e.g. `"recursion in Python"` |
+| `difficulty` | str | `"easy"`, `"medium"`, or `"hard"` |
+| `student_response` | str | What the student said this turn |
+| `confusion_score` | float | 0.0 (clear) → 1.0 (very confused) |
+| `turn_number` | int | Current turn (1–10) |
+| `pre_quiz_score` | int | Score before teaching (0–5) |
+| `post_quiz_score` | int | Score after teaching (0 until done) |
+| `misconception` | str | The specific wrong belief the student holds |
+| `misconception_resolved` | bool | True if student corrected their belief |
+| `feedback` | str | What happened this turn |
+| `reward` | float | Reward for this step |
+| `done` | bool | Whether the episode has ended |
 
-**Episode Flow**:
-1. `reset()` assigns a topic + difficulty level and runs a pre-quiz
-2. Agent sends `teacher_message` via `step()`
-3. Student responds with updated confusion level
-4. After 10 turns, post-quiz evaluates learning improvement
-5. Reward calculated based on quiz gains, misconception resolution, and teaching efficiency
-
-## Action Space
-
-```python
+### Example Observation:
+```json
 {
-    "teacher_message": str  # Guiding question or hint (e.g., "Why do you think that happens?")
+  "topic": "recursion in Python",
+  "difficulty": "medium",
+  "student_response": "I think recursion just loops forever, maybe?",
+  "confusion_score": 0.8,
+  "turn_number": 1,
+  "pre_quiz_score": 1,
+  "post_quiz_score": 0,
+  "misconception": "recursion always causes infinite loops",
+  "misconception_resolved": false,
+  "feedback": "Student shows high confusion. Keep asking guiding questions.",
+  "reward": 0.0,
+  "done": false
 }
 ```
 
-**Constraints**: Messages containing direct answers (e.g., "The answer is...") receive penalties.
+---
 
-## Observation Space
+## 📤 Action Space
 
-```python
-{
-    "topic": str,                    # e.g., "recursion in Python"
-    "difficulty": str,               # "easy" | "medium" | "hard"
-    "student_response": str,         # Student's latest reply
-    "confusion_score": float,        # 0.0 (clear) to 1.0 (confused)
-    "turn_number": int,              # 0 to 10
-    "pre_quiz_score": int,           # 0-5 (before teaching)
-    "post_quiz_score": int,          # 0-5 (after teaching, 0 until done)
-    "misconception": str,            # e.g., "recursion always causes infinite loops"
-    "misconception_resolved": bool,  # True if corrected
-    "feedback": str,                 # Turn-by-turn feedback
-    "reward": float,                 # Step reward
-    "done": bool                     # Episode complete
-}
+What the AI teacher **sends** at each step:
+
+| Field | Type | Description |
+|---|---|---|
+| `teacher_message` | str | A guiding question, hint, or analogy |
+
+### Good action (rewarded):
+```json
+{ "teacher_message": "What do you think happens when the function reaches a base case?" }
 ```
 
-## Reward Function
+### Bad action (penalized):
+```json
+{ "teacher_message": "The answer is that recursion stops at the base case." }
+```
 
-- **Per-turn**: +0.05 if confusion decreases, -0.1 if direct answer given
-- **Final (at done=True)**: `(quiz_delta * 0.45) + misconception_bonus + teaching_quality - efficiency_penalty`
-  - `quiz_delta`: (post_score - pre_score) / 5.0
-  - `misconception_bonus`: +0.15 if resolved
-  - `teaching_quality`: +0.25 if resolved in ≤7 turns, else +0.10
-  - `efficiency_penalty`: (turns/10) * 0.05
+---
 
-**Range**: -1.0 to +1.0
+## 🏆 Reward Structure
 
-## Tasks & Difficulty Levels
+### Per-turn reward:
+| Condition | Reward |
+|---|---|
+| Confusion score decreased | `+0.05` |
+| Teacher directly stated the answer | `-0.10` |
+| No change | `0.0` |
 
-1. **Easy Teaching** (loops, lists, functions): Student needs 3 guiding questions to resolve misconception
-2. **Medium Teaching** (recursion, sorting, binary search): Requires 5 guiding questions
-3. **Hard Teaching** (trees, complexity, DP): Needs 7 guiding questions, includes "wrong expert" responses
+### Final reward (at `done=True`):
+```
+final_reward =
+  (quiz_delta / 5.0) × 0.45        ← actual learning outcome
+  + misconception_resolved × 0.15   ← targeted correction bonus
+  + teaching_quality × 0.25         ← quality of teaching
+  - (turns_used / 10) × 0.05        ← efficiency penalty
+```
 
-## Setup Instructions
+Where:
+- `quiz_delta` = post_quiz_score − pre_quiz_score
+- `teaching_quality` = 0.25 if resolved in ≤ 7 turns, else 0.10
+- **Anti-cheat**: If teacher directly stated the answer, rubric score collapses to 0
 
-### Prerequisites
-- Python 3.8+
-- Docker (for containerized deployment)
-- Hugging Face account with Spaces access
+**Reward range**: −1.0 to +1.0
 
-### OpenAI API Setup
-The inference script uses OpenAI API for automated grading of teaching quality.
+---
 
-1. **Get OpenAI API Access**:
-   - Sign up at [platform.openai.com](https://platform.openai.com)
-   - Generate an API key from your dashboard
-   - Add credits to your account ($5-10 recommended for testing)
+## 📚 Topics & Misconceptions
 
-2. **Set Environment Variables**:
-   ```bash
-   export API_BASE_URL="https://api.openai.com/v1"
-   export MODEL_NAME="gpt-4o-mini"  # or "gpt-4" for better quality
-   export OPENAI_API_KEY="your-actual-api-key-here"
-   ```
+### Easy (3 guiding questions needed)
+| Topic | Student Misconception |
+|---|---|
+| Loops in Python | "A while loop always runs forever" |
+| Lists in Python | "Lists can only store numbers" |
+| Functions in Python | "A function runs automatically when defined" |
 
-   **Alternative**: Create a `.env` file in the project root:
-   ```
-   API_BASE_URL=https://api.openai.com/v1
-   MODEL_NAME=gpt-4o-mini
-   OPENAI_API_KEY=your-actual-api-key-here
-   ```
+### Medium (5 guiding questions needed)
+| Topic | Student Misconception |
+|---|---|
+| Recursion in Python | "Recursion always causes infinite loops" |
+| Sorting algorithms | "Bubble sort is always the fastest" |
+| Binary search | "Binary search works on unsorted lists" |
 
-### Installation
+### Hard (7 guiding questions needed + wrong expert persona)
+| Topic | Student Misconception |
+|---|---|
+| Trees in CS | "A binary tree must always be balanced" |
+| Time complexity | "O(n²) is always slower than O(n log n) for all inputs" |
+| Dynamic programming | "Dynamic programming is just recursion with loops" |
+
+---
+
+## 🤖 Student Simulator
+
+The student is a **rule-based simulator** (no LLM needed):
+
+- Starts with the misconception firmly held (`confusion_score = 0.8–1.0`)
+- Responds to guiding words (`"why"`, `"what if"`, `"consider"`, `"what happens when"`) → confusion decreases
+- Responds to direct answers (`"the answer is"`, `"it means"`) → says "oh okay" but misconception stays (anti-cheat)
+- When `confusion_score < 0.3` and `turn > 5` → `misconception_resolved = True`
+- Hard difficulty: student is a **wrong expert** (confidently wrong, not confused)
+
+---
+
+## 📊 Baseline Scores
+
+| Difficulty | Baseline Reward |
+|---|---|
+| Easy | 0.85 |
+| Medium | 0.78 |
+| Hard | 0.72 |
+
+---
+
+## 🚀 Quick Start
+
+### Install
 ```bash
-git clone <your-repo>
-cd socratic-teach-env
+git clone https://github.com/Aishwarya011k/SocraticTeach-Env
+cd SocraticTeach-Env
 pip install -r requirements.txt
 ```
 
-### Running Tests
+### Run locally
 ```bash
-python validator.py  # Pre-submission validation
-python inference.py  # Run baseline inference with graders
+uvicorn server.app:app --host 0.0.0.0 --port 8000
 ```
 
-### Deployment to Hugging Face Spaces
-1. Push this repo to GitHub
-2. Create a new Hugging Face Space with Docker
-3. Connect your GitHub repo
-4. The Space will auto-build using the Dockerfile
-5. Verify the `/reset` endpoint returns 200
-
-### Baseline Scores
-- Easy Teaching: 0.85
-- Medium Teaching: 0.78
-- Hard Teaching: 0.72
-
-### Example Usage
+### Use the environment
 ```python
 from server.debug_env_environment import DebugEnvironment
 from debug_env.models import TeacherAction
 
 env = DebugEnvironment()
-obs = env.reset(difficulty="easy")
+obs = env.reset(difficulty="medium")
+
+print("Topic:", obs.topic)
+print("Misconception:", obs.misconception)
+print("Student:", obs.student_response)
 
 while not obs.done:
-    action = TeacherAction(teacher_message="Why do you think that happens?")
+    action = TeacherAction(
+        teacher_message="What do you think happens when the function calls itself?"
+    )
     obs = env.step(action)
-    print(f"Reward: {obs.reward}, Done: {obs.done}")
+    print(f"Turn {obs.turn_number} | Confusion: {obs.confusion_score:.2f} | Reward: {obs.reward:.3f}")
+
+print(f"\nFinal reward: {obs.reward}")
+print(f"Misconception resolved: {obs.misconception_resolved}")
+print(f"Pre-quiz: {obs.pre_quiz_score}/5 → Post-quiz: {obs.post_quiz_score}/5")
 ```
 
-## Deployment
+---
 
-The environment is deployed to Hugging Face Spaces with a working Dockerfile for containerized execution.
+## 🔌 API Endpoints
 
-## License
+| Endpoint | Method | Description |
+|---|---|---|
+| `/reset` | POST | Start a new episode |
+| `/step` | POST | Submit a teacher message |
+| `/state` | GET | Get current episode state |
+| `/docs` | GET | Swagger UI |
+| `/health` | GET | Health check |
 
-MIT License
+---
+
+## 📁 Project Structure
+
+```
+SocraticTeach-Env/
+├── debug_env/
+│   ├── __init__.py               # Exports TeacherAction, TeachObservation
+│   ├── models.py                 # Action and Observation definitions
+│   └── client.py                 # OpenEnv client class
+├── server/  # Core logic: student sim, quiz, reward
+│   └── debug_env_environment.py                  # FastAPI app
+├── inference.py                  # Baseline agent runner
+├── openenv.yaml                  # OpenEnv manifest
+├── requirements.txt              # Dependencies
+├── Dockerfile                    # Container definition
+└── README.md                     # This file
+```
+
+---
+
+## ⚙️ Environment Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `OPENAI_API_KEY` | Optional | For LLM-based teaching quality grader |
+| `API_BASE_URL` | Optional | API base URL (default: OpenAI) |
+| `MODEL_NAME` | Optional | Model for grading (default: gpt-4o-mini) |
+
+The environment works fully **without any API key** — the student simulator and quiz grader are pure Python.
+
+---
+
+## 🧰 Tech Stack
+
+| Component | Technology |
+|---|---|
+| Framework | OpenEnv by Meta & Hugging Face |
+| API | FastAPI + Uvicorn |
+| Container | Docker |
+| Deployment | Hugging Face Spaces |
+| Student Simulator | Rule-based Python (no LLM needed) |
+| Quiz Grader | Pure Python MCQ comparison |
+| Teaching Quality | Optional LLM rubric grader |
+
+---
+
+## 🔒 Why This Environment Is Novel
+
+- **No existing OpenEnv environment trains a teacher agent** — completely unoccupied niche
+- **Programmatic grader** — pure Python quiz comparison, zero ambiguity, no LLM needed for core reward
+- **Anti-cheat mechanism** — direct answers are detected and penalized automatically
+- **Confusion signal as observation** — real-time scalar derived from student's hedge words
+- **Wrong expert persona** (hard mode) — student is confidently wrong, not just confused
+- **6 domains ready** — CS, Law, Medicine, Ethics, Finance, History (CS fully implemented)
+
+---
