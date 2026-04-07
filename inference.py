@@ -78,6 +78,27 @@ Score 0.0-1.0 considering Socratic depth, handling wrong expert responses, and m
 Consider: question sophistication, persistence through confusion, final outcomes.
 Return only the score as a float between 0.0 and 1.0.""",
     },
+    "ethics_easy_teaching": {
+        "difficulty": "ethics_easy",
+        "prompt": """Evaluate ethical teaching for basic dilemmas.
+Score 0.0-1.0 on guiding through ethical reasoning, confusion reduction, and misconception resolution.
+Consider: exploration of different perspectives, values clarification, final quiz improvement.
+Return only the score as a float between 0.0 and 1.0.""",
+    },
+    "ethics_medium_teaching": {
+        "difficulty": "ethics_medium",
+        "prompt": """Assess teaching of applied ethical dilemmas.
+Score 0.0-1.0 on handling complex ethical trade-offs, guiding through frameworks, misconception resolution.
+Consider: consideration of consequences, stakeholder analysis, final outcomes.
+Return only the score as a float between 0.0 and 1.0.""",
+    },
+    "ethics_hard_teaching": {
+        "difficulty": "ethics_hard",
+        "prompt": """Evaluate advanced institutional ethics teaching.
+Score 0.0-1.0 on systemic ethical reasoning, handling complex societal issues, misconception resolution.
+Consider: long-term impacts, justice principles, stakeholder complexity, final quiz improvement.
+Return only the score as a float between 0.0 and 1.0.""",
+    },
 }
 
 

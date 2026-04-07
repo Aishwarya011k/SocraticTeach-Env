@@ -128,6 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Project specific
+validator.py
+
 # IDE
 .vscode/
 .idea/
@@ -145,3 +148,4 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+

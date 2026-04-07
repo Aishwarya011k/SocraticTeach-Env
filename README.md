@@ -1,6 +1,6 @@
 # SocraticTeach-Env
 
-An OpenEnv reinforcement learning environment for training AI teachers using the Socratic method. The environment simulates teaching computer science concepts to a student who starts with misconceptions, rewarding agents for guiding questions that resolve misunderstandings without directly stating answers.
+An OpenEnv reinforcement learning environment for training AI teachers using the Socratic method. The environment simulates teaching across multiple domains to students who start with misconceptions, rewarding agents for guiding questions that resolve misunderstandings without directly stating answers.
 
 ## Motivation
 
@@ -12,6 +12,56 @@ Traditional AI tutoring systems often provide direct answers, limiting long-term
 - Encourages pedagogical skill development in AI
 
 The environment addresses the challenge of creating AI tutors that teach effectively without "spoon-feeding" answers, focusing on the art of questioning and guidance.
+
+## Curriculum Domains
+
+SocraticTeach-Env supports teaching across 6 domains with researched misconception profiles:
+
+### Computer Science
+- **L1**: Loops, lists, base cases
+- **L2**: Recursion, functions, sorting  
+- **L3**: Trees, binary search, algorithms
+- **Novel Mechanic**: Misconception profiles from CS education research (off-by-one, infinite loop belief)
+
+### Law
+- **L1**: Contract basics, offer & acceptance
+- **L2**: Tort, negligence, liability
+- **L3**: Constitutional reasoning, precedent
+- **Novel Mechanic**: IRAC completion grader (Issue/Rule/Application/Conclusion). Counterargument injection
+
+### Medicine
+- **L1**: Vital signs, triage basics
+- **L2**: Differential diagnosis
+- **L3**: Drug interactions, clinical bias
+- **Novel Mechanic**: Symptom Reveal Loop mechanic. Premature Closure Detection as a named cognitive error.
+
+### Ethics & Philosophy
+- **L1**: Trolley problem, basic frameworks
+- **L2**: Applied dilemmas (self-driving cars)
+- **L3**: Institutional ethics (resource rationing)
+- **Novel Mechanic**: Principle Consistency Test — checks if student applies their chosen framework consistently across scenarios.
+
+### Finance & Economics
+- **L1**: Interest, inflation, opportunity cost
+- **L2**: Sunk cost fallacy, risk vs. return
+- **L3**: Base rate neglect, portfolio theory
+- **Novel Mechanic**: Intuition Trap Setup — student has strong but wrong gut-feeling. Counterfactual Questioning forced mechanic.
+
+### History
+- **L1**: Single-cause events
+- **L2**: Multi-causal events, correlation vs. causation
+- **L3**: Counterfactual history, structural causes
+- **Novel Mechanic**: Transfer Learning Quiz — post-quiz uses structurally isomorphic scenario, not same content. Tests real reasoning transfer.
+
+## Current Implementation
+
+This submission implements the **Computer Science domain** as a complete, working proof-of-concept with:
+- 9 topics across 3 difficulty levels
+- Full OpenEnv compliance
+- HF Spaces deployment ready
+- Comprehensive testing and validation
+
+The framework is designed to easily extend to the other 5 domains using the same architecture.
 
 ## Environment Description
 

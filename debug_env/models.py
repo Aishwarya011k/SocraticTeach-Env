@@ -82,10 +82,28 @@ TOPICS = {
             "misconception": "dynamic programming is just recursion with loops",
         },
     ],
+    "ethics_easy": [
+        {
+            "topic": "trolley problem basics",
+            "misconception": "the trolley problem has a single correct answer",
+        },
+    ],
+    "ethics_medium": [
+        {
+            "topic": "applied ethical dilemmas",
+            "misconception": "ethical decisions are always black and white",
+        },
+    ],
+    "ethics_hard": [
+        {
+            "topic": "institutional ethics",
+            "misconception": "ethics don't apply to institutions and systems",
+        },
+    ],
 }
 
 # Guiding questions needed per difficulty before misconception resolves
-GUIDING_THRESHOLD = {"easy": 3, "medium": 5, "hard": 7}
+GUIDING_THRESHOLD = {"easy": 3, "medium": 5, "hard": 7, "ethics_easy": 3, "ethics_medium": 5, "ethics_hard": 7}
 
 # ---------------------------------------------------------------------------
 # Quiz bank — 5 MCQ per topic
@@ -464,6 +482,163 @@ QUIZ_BANK: dict[str, list[dict]] = {
             "answer": 1,
         },
     ],
+    # ---- ethics ---------------------------------------------------------------
+    "trolley problem basics": [
+        {
+            "q": "In the classic trolley problem, what is the main ethical dilemma?",
+            "options": [
+                "Whether to save more lives or fewer lives",
+                "Whether animals have rights",
+                "Whether money can buy happiness",
+                "Whether rules should be followed",
+            ],
+            "answer": 0,
+        },
+        {
+            "q": "The trolley problem explores which ethical framework?",
+            "options": [
+                "Utilitarianism vs. Deontology",
+                "Egoism vs. Altruism",
+                "Relativism vs. Absolutism",
+                "Hedonism vs. Stoicism",
+            ],
+            "answer": 0,
+        },
+        {
+            "q": "What does utilitarianism prioritize in the trolley problem?",
+            "options": [
+                "Following rules regardless of consequences",
+                "The greatest good for the greatest number",
+                "Individual rights above all",
+                "Personal happiness only",
+            ],
+            "answer": 1,
+        },
+        {
+            "q": "What does deontology emphasize in ethical decisions?",
+            "options": [
+                "Consequences and outcomes",
+                "Rules and duties",
+                "Personal feelings",
+                "Social norms",
+            ],
+            "answer": 1,
+        },
+        {
+            "q": "The trolley problem shows that ethical dilemmas often involve:",
+            "options": [
+                "Clear right and wrong choices",
+                "Trade-offs between competing values",
+                "Only financial considerations",
+                "Religious beliefs",
+            ],
+            "answer": 1,
+        },
+    ],
+    "applied ethical dilemmas": [
+        {
+            "q": "In self-driving car ethics, the 'trolley problem' variant asks:",
+            "options": [
+                "Whether cars should have manual override",
+                "Whether to prioritize passenger safety or pedestrian safety",
+                "Whether cars should be electric",
+                "Whether insurance covers accidents",
+            ],
+            "answer": 1,
+        },
+        {
+            "q": "Autonomous vehicles must make decisions about:",
+            "options": [
+                "Only traffic laws",
+                "Only passenger comfort",
+                "Both safety and ethical trade-offs",
+                "Only speed limits",
+            ],
+            "answer": 2,
+        },
+        {
+            "q": "In medical AI triage, ethical decisions involve:",
+            "options": [
+                "Only cost considerations",
+                "Balancing limited resources with patient needs",
+                "Only doctor preferences",
+                "Only hospital policies",
+            ],
+            "answer": 1,
+        },
+        {
+            "q": "Social media algorithms raise ethical concerns about:",
+            "options": [
+                "Only data privacy",
+                "Content moderation and echo chambers",
+                "Only ad revenue",
+                "Only user interface design",
+            ],
+            "answer": 1,
+        },
+        {
+            "q": "AI in hiring should avoid bias by:",
+            "options": [
+                "Using only resume data",
+                "Considering diverse training data and fairness metrics",
+                "Ignoring protected characteristics",
+                "Focusing only on skills",
+            ],
+            "answer": 1,
+        },
+    ],
+    "institutional ethics": [
+        {
+            "q": "Resource rationing in healthcare involves:",
+            "options": [
+                "Only financial considerations",
+                "Ethical principles of justice and fairness",
+                "Only medical expertise",
+                "Only patient preferences",
+            ],
+            "answer": 1,
+        },
+        {
+            "q": "Institutional ethics differ from individual ethics because:",
+            "options": [
+                "They don't involve moral decisions",
+                "They affect many people and have systemic impacts",
+                "They only follow laws",
+                "They ignore consequences",
+            ],
+            "answer": 1,
+        },
+        {
+            "q": "Corporate social responsibility includes:",
+            "options": [
+                "Only profit maximization",
+                "Balancing stakeholder interests and societal impact",
+                "Only legal compliance",
+                "Only shareholder value",
+            ],
+            "answer": 1,
+        },
+        {
+            "q": "Government policy on climate change involves:",
+            "options": [
+                "Only economic costs",
+                "Intergenerational justice and environmental ethics",
+                "Only political popularity",
+                "Only scientific data",
+            ],
+            "answer": 1,
+        },
+        {
+            "q": "Ethical institutional decision-making requires:",
+            "options": [
+                "Only following rules",
+                "Considering multiple stakeholders and long-term impacts",
+                "Only short-term benefits",
+                "Only expert opinions",
+            ],
+            "answer": 1,
+        },
+    ],
 }
 
 
@@ -476,6 +651,10 @@ GUIDING_WORDS = [
     "why", "what if", "consider", "think about", "what happens when",
     "how would", "can you", "imagine", "suppose", "what do you",
     "have you", "does that", "could you", "what might", "how might",
+    # Ethics-specific guiding words
+    "what would you do", "how do you feel about", "is it fair",
+    "what are the consequences", "who benefits", "who is harmed",
+    "what principles apply", "what values matter",
 ]
 
 # Phrases that indicate the teacher is directly stating the answer (anti-cheat)
@@ -483,6 +662,10 @@ DIRECT_ANSWER_PHRASES = [
     "the answer is", "it means", "recursion is", "the solution is",
     "you should know", "the correct answer", "the definition is",
     "it is defined as", "it simply means", "to summarise,",
+    # Ethics-specific direct answer phrases
+    "the right choice is", "you should choose", "the ethical thing is",
+    "morally correct is", "the proper decision is", "ethics says",
+    "the dilemma is solved by", "the answer to the trolley problem is",
 ]
 
 # Student response templates
@@ -511,6 +694,22 @@ _STUDENT_RESPONSES = {
         "I'm actually quite sure that {misconception}. I've read about this.",
         "With respect, I believe {misconception} — it's well established.",
         "I disagree — {misconception} is definitely true from what I know.",
+    ],
+    # Ethics-specific responses
+    "ethics_confused": [
+        "This is really tricky. I think {misconception}, but I'm not sure if that's right.",
+        "Morally speaking, I'm confused. Does {misconception}?",
+        "I feel conflicted about this. Is {misconception} the ethical view?",
+    ],
+    "ethics_partial": [
+        "Hmm, maybe there are different ways to look at this ethically...",
+        "I'm starting to see that {misconception} might not be the only perspective.",
+        "This dilemma makes me think there might be more to consider than just {misconception}.",
+    ],
+    "ethics_resolved": [
+        "Oh! I see now. {misconception} isn't the complete ethical picture.",
+        "That makes sense! Ethics involves more than just {misconception}.",
+        "I understand now. The ethical issue is more nuanced than {misconception}.",
     ],
 }
 
@@ -561,18 +760,27 @@ def simulate_student(
         if new_guiding_count >= threshold and turn_number > 4:
             # Misconception resolved
             new_resolved = True
-            response = _pick(_STUDENT_RESPONSES["resolved"], misconception)
+            if difficulty.startswith("ethics"):
+                response = _pick(_STUDENT_RESPONSES["ethics_resolved"], misconception)
+            else:
+                response = _pick(_STUDENT_RESPONSES["resolved"], misconception)
         elif difficulty == "hard" and turn_number <= 4:
             # Hard mode: confidently wrong early on
             response = _pick(_STUDENT_RESPONSES["hard_confident_wrong"], misconception)
         else:
-            response = _pick(_STUDENT_RESPONSES["partial"], misconception)
+            if difficulty.startswith("ethics"):
+                response = _pick(_STUDENT_RESPONSES["ethics_partial"], misconception)
+            else:
+                response = _pick(_STUDENT_RESPONSES["partial"], misconception)
     else:
         # No guiding word, not resolved — student stays confused
         if difficulty == "hard" and not misconception_resolved and turn_number <= 5:
             response = _pick(_STUDENT_RESPONSES["hard_confident_wrong"], misconception)
         else:
-            response = _pick(_STUDENT_RESPONSES["confused_start"], misconception)
+            if difficulty.startswith("ethics"):
+                response = _pick(_STUDENT_RESPONSES["ethics_confused"], misconception)
+            else:
+                response = _pick(_STUDENT_RESPONSES["confused_start"], misconception)
 
     return response, new_confusion, new_resolved, False, new_guiding_count
 
