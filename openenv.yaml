@@ -1,0 +1,112 @@
+name: SocraticTeach-Env
+version: 1.0.0
+description: An OpenEnv RL environment for training AI teachers using the Socratic method. Agents learn to guide students through misconceptions in computer science topics.
+
+environment:
+  class: server.debug_env_environment.DebugEnvironment
+  entry_point: server.debug_env_environment:DebugEnvironment
+
+action_space:
+  type: dict
+  properties:
+    teacher_message:
+      type: string
+      description: The teacher's guiding question or hint (must not directly state the answer)
+
+observation_space:
+  type: dict
+  properties:
+    topic:
+      type: string
+      enum: ["loops in Python", "lists in Python", "functions in Python", "recursion in Python", "sorting algorithms", "binary search", "trees in CS", "time complexity", "dynamic programming"]
+      description: The current teaching topic
+    difficulty:
+      type: string
+      enum: ["easy", "medium", "hard"]
+      description: Difficulty level affecting student responsiveness
+    student_response:
+      type: string
+      description: The student's latest response to the teacher
+    confusion_score:
+      type: number
+      minimum: 0.0
+      maximum: 1.0
+      description: Current student confusion level (0.0 = clear, 1.0 = very confused)
+    turn_number:
+      type: integer
+      minimum: 0
+      maximum: 10
+      description: Current turn in the episode
+    pre_quiz_score:
+      type: integer
+      minimum: 0
+      maximum: 5
+      description: Student's quiz score before teaching
+    post_quiz_score:
+      type: integer
+      minimum: 0
+      maximum: 5
+      description: Student's quiz score after teaching (0 until episode ends)
+    misconception:
+      type: string
+      description: The specific misconception the student holds
+    misconception_resolved:
+      type: boolean
+      description: Whether the misconception has been corrected
+    feedback:
+      type: string
+      description: Human-readable feedback on the current turn
+    reward:
+      type: number
+      description: Reward for the current step
+    done:
+      type: boolean
+      description: Whether the episode has ended
+
+reward_range:
+  minimum: -1.0
+  maximum: 1.0
+  description: Rewards range from -1.0 (penalty for direct answers) to +1.0 (maximum for perfect teaching)
+
+max_episode_steps: 10
+
+tasks:
+  - name: easy_teaching
+    description: Teach easy computer science concepts (loops, lists, functions)
+    difficulty: easy
+    grader:
+      type: agent
+      model: gpt-4
+      prompt: |
+        Evaluate how well the teacher guided the student through an easy misconception.
+        Score from 0.0 to 1.0 based on Socratic method usage and misconception resolution.
+        Return only the score as a float.
+
+  - name: medium_teaching
+    description: Teach medium computer science concepts (recursion, sorting, binary search)
+    difficulty: medium
+    grader:
+      type: agent
+      model: gpt-4
+      prompt: |
+        Evaluate teaching effectiveness for medium-difficulty topics.
+        Score 0.0-1.0 on guiding questions, confusion reduction, and final quiz improvement.
+        Return only the score as a float.
+
+  - name: hard_teaching
+    description: Teach hard computer science concepts (trees, time complexity, dynamic programming)
+    difficulty: hard
+    grader:
+      type: agent
+      model: gpt-4
+      prompt: |
+        Assess advanced teaching skills for complex topics.
+        Score 0.0-1.0 considering Socratic depth, handling wrong expert responses, and misconception resolution.
+        Return only the score as a float.
+
+baseline:
+  script: inference.py
+  scores:
+    easy_teaching: 0.85
+    medium_teaching: 0.78
+    hard_teaching: 0.72
