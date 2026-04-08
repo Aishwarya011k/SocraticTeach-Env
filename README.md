@@ -60,11 +60,13 @@ pip install -r requirements.txt
 
 ### Environment Setup
 ```bash
-# Set required environment variables
+# OPTIONAL: Only needed if running inference.py (baseline grading)
 export API_BASE_URL="https://api.openai.com/v1"
 export MODEL_NAME="gpt-4o-mini"
 export OPENAI_API_KEY="your-api-key"
 ```
+
+**Note:** The Hugging Face Space UI works **without any API key**. API key is only required for the `inference.py` baseline script (for automated grading).
 
 ### Run Baseline Inference
 ```bash
@@ -316,13 +318,19 @@ Tested with fixed guiding questions:
 
 ## 🛠️ Requirements
 
-### Environment Variables (Mandatory)
+### For Hugging Face Space UI (Gradio)
+✅ No API key needed — works standalone
+
+### For Baseline Inference (inference.py)
+⚠️ Requires OpenAI API credentials:
 
 ```bash
 API_BASE_URL     # LLM API endpoint (e.g., https://api.openai.com/v1)
 MODEL_NAME       # Model identifier (e.g., gpt-4o-mini)
-OPENAI_API_KEY   # Your API key
+OPENAI_API_KEY   # Your API key (for automated grading)
 ```
+
+**Why?** The inference script uses OpenAI's API to grade teaching quality. Without it, the baseline scores will not be generated.
 
 ### Python Dependencies
 
@@ -540,13 +548,13 @@ SocraticTeach-Env/
 
 ## ⚙️ Environment Variables
 
-| Variable | Required | Description |
+| Variable | Required For | Description |
 |---|---|---|
-| `OPENAI_API_KEY` | Optional | For LLM-based teaching quality grader |
-| `API_BASE_URL` | Optional | API base URL (default: OpenAI) |
-| `MODEL_NAME` | Optional | Model for grading (default: gpt-4o-mini) |
+| `OPENAI_API_KEY` | `inference.py` only | For LLM-based teaching quality grader |
+| `API_BASE_URL` | `inference.py` only | API base URL (default: OpenAI) |
+| `MODEL_NAME` | `inference.py` only | Model for grading (default: gpt-4o-mini) |
 
-The environment works fully **without any API key** — the student simulator and quiz grader are pure Python.
+**Space UI works fully without any API key** — the student simulator and quiz grader are pure Python. API key is only needed if you want to run the automated grading baseline (`inference.py`).
 
 ---
 
