@@ -274,7 +274,7 @@ python inference.py
 ### 3. Interactive Gradio UI
 
 ```bash
-python server/app.py
+python server/ui.py
 # Open http://localhost:7860
 ```
 

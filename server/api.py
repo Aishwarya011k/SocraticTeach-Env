@@ -66,6 +66,14 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "ok", "service": "SocraticTeach-Env"}
 
+@app.get("/reset")
+async def reset_info():
+    """Informational endpoint for reset."""
+    return {
+        "detail": "Use POST /reset with JSON body {\"difficulty\": \"easy\"}.",
+        "example": {"difficulty": "easy", "topic_index": 0, "seed": 123},
+    }
+
 @app.post("/reset")
 async def reset(request: ResetRequest):
     """Reset the environment and start a new episode"""
@@ -94,6 +102,14 @@ async def reset(request: ResetRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/step")
+async def step_info():
+    """Informational endpoint for step."""
+    return {
+        "detail": "Use POST /step with JSON body {\"teacher_message\": \"your question\"}.",
+        "example": {"teacher_message": "What do you think happens next?"},
+    }
 
 @app.post("/step")
 async def step(request: StepRequest):
