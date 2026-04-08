@@ -50,6 +50,17 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+@app.get("/")
+async def root():
+    """Root endpoint with service info."""
+    return {
+        "service": "SocraticTeach-Env",
+        "status": "ok",
+        "health": "/health",
+        "docs": "/docs",
+        "openapi": "/openapi.json",
+    }
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
