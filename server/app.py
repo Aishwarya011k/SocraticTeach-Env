@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """server/app.py — Hugging Face Spaces UI for SocraticTeach-Env."""
 
+import os
 import random
+import sys
+
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
 
 import gradio as gr
 
@@ -79,7 +85,7 @@ def step_episode(env, teacher_message: str, history: str):
 
 
 def build_interface():
-    with gr.Blocks(title="SocraticTeach-Env", theme=gr.themes.Soft()) as demo:
+    with gr.Blocks(title="SocraticTeach-Env") as demo:
         gr.Markdown(
             """
             # SocraticTeach-Env
@@ -134,4 +140,4 @@ def build_interface():
 
 if __name__ == "__main__":
     app = build_interface()
-    app.launch(server_name="0.0.0.0", server_port=7860)
+    app.launch(server_name="0.0.0.0", server_port=7860, theme=gr.themes.Soft())
