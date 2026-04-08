@@ -4,7 +4,20 @@ server/api.py — FastAPI server exposing OpenEnv endpoints for SocraticTeach-En
 Compliant with OpenEnv specification for validator checks
 """
 
+import os
+import sys
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+import uvicorn
+
+# Add project root to path
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
+from server.debug_env_environment import DebugEnvironment
+from debug_env.models import TeacherAction
 
 # Data models
 class ResetRequest(BaseModel):
@@ -14,14 +27,6 @@ class ResetRequest(BaseModel):
 
 class StepRequest(BaseModel):
     teacher_message: str
-
-# Add project root to path
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if ROOT_DIR not in sys.path:
-    sys.path.insert(0, ROOT_DIR)
-
-from server.debug_env_environment import DebugEnvironment
-from debug_env.models import TeacherAction
 
 # Global environment instance
 env_instance = None
@@ -45,7 +50,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
@@ -53,15 +57,7 @@ async def health_check():
 
 @app.post("/reset")
 async def reset(request: ResetRequest):
-    """
-    Reset the environment and start a new episode
-    
-    Args:
-        request: ResetRequest with difficulty, topic_index, seed
-        
-    Returns:
-        Initial observation
-    """
+    """Reset the environment and start a new episode"""
     global env_instance
     try:
         kwargs = {"difficulty": request.difficulty}
@@ -90,15 +86,7 @@ async def reset(request: ResetRequest):
 
 @app.post("/step")
 async def step(request: StepRequest):
-    """
-    Submit a teacher action and step the environment
-    
-    Args:
-        request: StepRequest with teacher_message
-        
-    Returns:
-        Updated observation
-    """
+    """Submit a teacher action and step the environment"""
     global env_instance
     try:
         action = TeacherAction(teacher_message=request.teacher_message)
@@ -122,27 +110,12 @@ async def step(request: StepRequest):
 
 @app.get("/state")
 async def state():
-    """
-    Get the current environment state
-    
-    Returns:
-        Full internal state dict
-    """
+    """Get the current environment state"""
     global env_instance
     try:
         return env_instance.state()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/docs")
-async def docs():
-    """API documentation (Swagger UI)"""
-    return {"message": "OpenAPI docs available at /docs or /redoc"}
-
 if __name__ == "__main__":
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=8000,
-        log_level="info"
-    )
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
