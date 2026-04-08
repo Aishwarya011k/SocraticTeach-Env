@@ -4,12 +4,16 @@ server/api.py — FastAPI server exposing OpenEnv endpoints for SocraticTeach-En
 Compliant with OpenEnv specification for validator checks
 """
 
-import os
-import sys
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
-import uvicorn
+from pydantic import BaseModel
+
+# Data models
+class ResetRequest(BaseModel):
+    difficulty: str = "easy"
+    topic_index: int = None
+    seed: int = None
+
+class StepRequest(BaseModel):
+    teacher_message: str
 
 # Add project root to path
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -48,25 +52,23 @@ async def health_check():
     return {"status": "ok", "service": "SocraticTeach-Env"}
 
 @app.post("/reset")
-async def reset(difficulty: str = "easy", topic_index: int = None, seed: int = None):
+async def reset(request: ResetRequest):
     """
     Reset the environment and start a new episode
     
     Args:
-        difficulty: "easy", "medium", or "hard"
-        topic_index: (optional) specific topic index
-        seed: (optional) random seed for reproducibility
+        request: ResetRequest with difficulty, topic_index, seed
         
     Returns:
         Initial observation
     """
     global env_instance
     try:
-        kwargs = {"difficulty": difficulty}
-        if seed is not None:
-            kwargs["seed"] = seed
-        if topic_index is not None:
-            kwargs["topic_index"] = topic_index
+        kwargs = {"difficulty": request.difficulty}
+        if request.seed is not None:
+            kwargs["seed"] = request.seed
+        if request.topic_index is not None:
+            kwargs["topic_index"] = request.topic_index
             
         obs = env_instance.reset(**kwargs)
         return {
@@ -87,19 +89,19 @@ async def reset(difficulty: str = "easy", topic_index: int = None, seed: int = N
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/step")
-async def step(teacher_message: str):
+async def step(request: StepRequest):
     """
     Submit a teacher action and step the environment
     
     Args:
-        teacher_message: The teacher's guiding question/hint/analogy
+        request: StepRequest with teacher_message
         
     Returns:
         Updated observation
     """
     global env_instance
     try:
-        action = TeacherAction(teacher_message=teacher_message)
+        action = TeacherAction(teacher_message=request.teacher_message)
         obs = env_instance.step(action)
         return {
             "topic": obs.topic,
