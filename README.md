@@ -168,7 +168,6 @@ pip install -r requirements.txt
 
 ### Running Tests
 ```bash
-python validator.py  # Pre-submission validation
 python inference.py  # Run baseline inference with graders
 ```
 
