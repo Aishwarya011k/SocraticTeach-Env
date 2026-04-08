@@ -1,3 +1,11 @@
+---
+title: SocraticTeach-Env
+emoji: 🧠
+colorFrom: blue
+colorTo: green
+sdk: docker
+---
+
 # SocraticTeach-Env
 
 An OpenEnv reinforcement learning environment for training AI teachers using the Socratic method. The environment simulates teaching across multiple domains to students who start with misconceptions, rewarding agents for guiding questions that resolve misunderstandings without directly stating answers.
