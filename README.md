@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ---
 title: SocraticTeach-Env
 emoji: 🧠
@@ -7,10 +6,7 @@ colorTo: green
 sdk: docker
 ---
 
-# SocraticTeach-Env
-=======
 # 🧠 SocraticTeach-Env
->>>>>>> ffe4e365c9ed94b297a6539ade917d27c941a4fe
 
 > An OpenEnv RL environment that trains AI agents to become effective teachers using the Socratic method — guiding students through questions rather than providing direct answers.
 
