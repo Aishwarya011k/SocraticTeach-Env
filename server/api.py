@@ -6,6 +6,7 @@ Compliant with OpenEnv specification for validator checks
 
 import os
 import sys
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 import uvicorn
@@ -18,22 +19,28 @@ if ROOT_DIR not in sys.path:
 from server.debug_env_environment import DebugEnvironment
 from debug_env.models import TeacherAction
 
-# Initialize FastAPI app
-app = FastAPI(
-    title="SocraticTeach-Env",
-    description="OpenEnv RL environment for training AI teachers using the Socratic method",
-    version="1.0.0"
-)
-
 # Global environment instance
 env_instance = None
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize environment on startup"""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup/shutdown events"""
     global env_instance
+    # Startup
     env_instance = DebugEnvironment()
     print("✓ Environment initialized")
+    yield
+    # Shutdown
+    print("✓ Environment shutdown")
+
+# Initialize FastAPI app with lifespan
+app = FastAPI(
+    title="SocraticTeach-Env",
+    description="OpenEnv RL environment for training AI teachers using the Socratic method",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
 
 @app.get("/health")
 async def health_check():
