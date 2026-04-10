@@ -29,8 +29,8 @@ EXPOSE 7860
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:7860/health || exit 1
+    CMD curl -f http://localhost:7860 || exit 1
 
-# Set Python path and run the server
+# Set Python path and run the Gradio app
 ENV PYTHONPATH=/app:$PYTHONPATH
-CMD ["python", "-m", "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["python", "app.py"]
