@@ -25,12 +25,12 @@ RUN mkdir -p debug_env && \
     touch debug_env/__init__.py && \
     cp models.py debug_env/
 
-# Expose port for Gradio app
-EXPOSE 7860
+# Expose port for OpenEnv HTTP API
+EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:7860/api/predict || exit 1
+    CMD curl -f http://localhost:8000/health || exit 1
 
-# Default command: run the Gradio app
-CMD ["python", "app.py"]
+# Default command: run the OpenEnv HTTP server
+CMD ["python", "-m", "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
