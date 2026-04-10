@@ -5,43 +5,21 @@ The main OpenEnv environment implementing the Socratic teaching paradigm.
 
 import random
 import sys
+import os
 from pathlib import Path
 from typing import Dict, Optional, List, Tuple
 from openenv.core import Environment, Action, Observation
 
-# Handle imports from models - try multiple paths for flexibility
-try:
-    # Try package import first
-    from debug_env.models import (
-        Action as TeacherAction,
-        Observation as TeacherObservation,
-        TOPICS_BY_DIFFICULTY,
-        MISCONCEPTIONS_DB,
-        get_quiz_for_topic,
-    )
-except ImportError:
-    try:
-        # Fallback to parent directory import
-        sys.path.insert(0, str(Path(__file__).parent.parent))
-        from models import (
-            Action as TeacherAction,
-            Observation as TeacherObservation,
-            TOPICS_BY_DIFFICULTY,
-            MISCONCEPTIONS_DB,
-            get_quiz_for_topic,
-        )
-    except ImportError as e:
-        # Last resort: try relative import with parent module
-        import os
-        parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        sys.path.insert(0, parent_dir)
-        from models import (
-            Action as TeacherAction,
-            Observation as TeacherObservation,
-            TOPICS_BY_DIFFICULTY,
-            MISCONCEPTIONS_DB,
-            get_quiz_for_topic,
-        )
+# Add parent directory to path for model imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from models import (
+    Action as TeacherAction,
+    Observation as TeacherObservation,
+    TOPICS_BY_DIFFICULTY,
+    MISCONCEPTIONS_DB,
+    get_quiz_for_topic,
+)
 
 
 # Guiding words that indicate Socratic method

@@ -5,9 +5,16 @@ This enables compatibility with OpenEnv submission platforms.
 
 import uvicorn
 import json
+import sys
+import os
+from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
+
+# Add current directory to Python path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from server.debug_env_environment import DebugEnvironment
 from models import Action, Observation
 
