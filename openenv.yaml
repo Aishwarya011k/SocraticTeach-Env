@@ -1,112 +1,157 @@
 name: SocraticTeach-Env
-version: 1.0.0
-description: An OpenEnv RL environment for training AI teachers using the Socratic method. Agents learn to guide students through misconceptions in computer science topics.
+version: "1.0.0"
+description: "An RL environment where an AI teacher learns to teach a student using the Socratic method"
 
+# OpenEnv specification compliance
+openenv_version: "1.0"
+
+# Environment class information
 environment:
-  class: server.debug_env_environment.DebugEnvironment
-  entry_point: server.debug_env_environment:DebugEnvironment
+  class_name: DebugEnvironment
+  module: server.debug_env_environment
+  description: "Socratic Teaching Environment"
 
-action_space:
-  type: dict
-  properties:
+# Action specification
+action:
+  type: object
+  fields:
     teacher_message:
       type: string
-      description: The teacher's guiding question or hint (must not directly state the answer)
+      description: "The teacher's message (must be a question or hint, not a direct answer)"
+  required:
+    - teacher_message
 
-observation_space:
-  type: dict
-  properties:
+# Observation specification
+observation:
+  type: object
+  fields:
     topic:
       type: string
-      enum: ["loops in Python", "lists in Python", "functions in Python", "recursion in Python", "sorting algorithms", "binary search", "trees in CS", "time complexity", "dynamic programming"]
-      description: The current teaching topic
+      description: "Learning topic (e.g., 'loops in Python')"
     difficulty:
       type: string
       enum: ["easy", "medium", "hard"]
-      description: Difficulty level affecting student responsiveness
+      description: "Difficulty level"
     student_response:
       type: string
-      description: The student's latest response to the teacher
+      description: "What the student said in response"
     confusion_score:
       type: number
       minimum: 0.0
       maximum: 1.0
-      description: Current student confusion level (0.0 = clear, 1.0 = very confused)
+      description: "Student confusion level (0=clear, 1=very confused)"
     turn_number:
       type: integer
       minimum: 0
       maximum: 10
-      description: Current turn in the episode
+      description: "Current turn number in episode"
     pre_quiz_score:
       type: integer
       minimum: 0
       maximum: 5
-      description: Student's quiz score before teaching
+      description: "Pre-teaching quiz score (0-5)"
     post_quiz_score:
       type: integer
       minimum: 0
       maximum: 5
-      description: Student's quiz score after teaching (0 until episode ends)
+      description: "Post-teaching quiz score (0-5, only filled at episode end)"
     misconception:
       type: string
-      description: The specific misconception the student holds
+      description: "The specific misconception the student holds"
     misconception_resolved:
       type: boolean
-      description: Whether the misconception has been corrected
+      description: "Whether the student's misconception has been resolved"
     feedback:
       type: string
-      description: Human-readable feedback on the current turn
+      description: "Human-readable feedback about this turn"
     reward:
       type: number
-      description: Reward for the current step
+      minimum: -0.5
+      maximum: 1.0
+      description: "Reward signal (turn reward or final episode reward)"
     done:
       type: boolean
-      description: Whether the episode has ended
+      description: "Whether the episode is complete"
+  required:
+    - topic
+    - difficulty
+    - student_response
+    - confusion_score
+    - turn_number
+    - pre_quiz_score
+    - post_quiz_score
+    - misconception
+    - misconception_resolved
+    - feedback
+    - reward
+    - done
 
-reward_range:
-  minimum: -1.0
-  maximum: 1.0
-  description: Rewards range from -1.0 (penalty for direct answers) to +1.0 (maximum for perfect teaching)
+# Environment metadata
+metadata:
+  max_episode_steps: 10
+  action_space: "Discrete (teacher can send any message)"
+  observation_space: "Box(continuous + discrete + string fields)"
+  reward_range: [-0.5, 1.0]
 
-max_episode_steps: 10
+# Topics and misconceptions
+topics:
+  easy:
+    - topic: "loops in Python"
+      misconception: "a while loop always runs forever"
+    - topic: "lists in Python"
+      misconception: "lists can only store numbers"
+    - topic: "functions in Python"
+      misconception: "a function runs automatically when defined"
+  medium:
+    - topic: "recursion in Python"
+      misconception: "recursion always causes infinite loops"
+    - topic: "sorting algorithms"
+      misconception: "bubble sort is always the fastest"
+    - topic: "binary search"
+      misconception: "binary search works on unsorted lists"
+  hard:
+    - topic: "trees in CS"
+      misconception: "a binary tree must always be balanced"
+    - topic: "time complexity"
+      misconception: "O(n^2) is always slower than O(n log n) for all inputs"
+    - topic: "dynamic programming"
+      misconception: "dynamic programming is just recursion with loops"
 
-tasks:
-  - name: easy_teaching
-    description: Teach easy computer science concepts (loops, lists, functions)
-    difficulty: easy
-    grader:
-      type: agent
-      model: gpt-4
-      prompt: |
-        Evaluate how well the teacher guided the student through an easy misconception.
-        Score from 0.0 to 1.0 based on Socratic method usage and misconception resolution.
-        Return only the score as a float.
+# API endpoints
+endpoints:
+  reset:
+    method: POST
+    path: /reset
+    input: {}
+    output: Observation
+    description: "Reset environment and start new episode"
+  step:
+    method: POST
+    path: /step
+    input:
+      action: Action
+    output: Observation
+    description: "Execute one step"
+  state:
+    method: POST
+    path: /state
+    input: {}
+    output: Dict
+    description: "Get current environment state"
 
-  - name: medium_teaching
-    description: Teach medium computer science concepts (recursion, sorting, binary search)
-    difficulty: medium
-    grader:
-      type: agent
-      model: gpt-4
-      prompt: |
-        Evaluate teaching effectiveness for medium-difficulty topics.
-        Score 0.0-1.0 on guiding questions, confusion reduction, and final quiz improvement.
-        Return only the score as a float.
+# Performance requirements
+performance:
+  max_reset_time_ms: 100
+  max_step_time_ms: 50
+  max_episode_time_seconds: 120
+  memory_per_instance_mb: 128
 
-  - name: hard_teaching
-    description: Teach hard computer science concepts (trees, time complexity, dynamic programming)
-    difficulty: hard
-    grader:
-      type: agent
-      model: gpt-4
-      prompt: |
-        Assess advanced teaching skills for complex topics.
-        Score 0.0-1.0 considering Socratic depth, handling wrong expert responses, and misconception resolution.
-        Return only the score as a float.
-
-baseline:
-  script: inference.py
-  scores:
-    easy_teaching: 0.85
-    medium_teaching: 0.78
-    hard_teaching: 0.72
+# Deployment info
+deployment:
+  containerized: true
+  dockerfile: "Dockerfile"
+  hf_spaces_compatible: true
+  min_vcpu: 2
+  min_memory_gb: 8
+  port: 7860
+  healthcheck_endpoint: "/api/predict"

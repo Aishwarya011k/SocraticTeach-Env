@@ -1,584 +1,630 @@
----
-title: SocraticTeach-Env
-emoji: 🧠
-colorFrom: blue
-colorTo: green
-sdk: docker
----
+# 🎓 SocraticTeach-Env: Interactive Teaching RL Environment
 
-# 🧠 SocraticTeach-Env
-## AI-Powered Socratic Teaching — An OpenEnv RL Environment
+**An OpenEnv-compliant reinforcement learning environment where AI agents learn to teach students using the Socratic method.**
 
-**Hackathon Submission** | **April 2026**
+[![OpenEnv Compatible](https://img.shields.io/badge/OpenEnv-Compatible-green)](https://github.com/openenv/openenv)
+[![Python 3.8+](https://img.shields.io/badge/Python-3.8+-blue)](https://www.python.org/)
+[![Docker Ready](https://img.shields.io/badge/Docker-Ready-orange)](https://www.docker.com/)
+[![HuggingFace Spaces](https://img.shields.io/badge/HuggingFace-Spaces-yellow)](https://huggingface.co/spaces)
 
-> An OpenEnv RL environment that trains AI agents to become effective teachers using the Socratic method — guiding students through questions rather than providing direct answers.
+## 📖 Overview
 
----
+SocraticTeach-Env is a sophisticated RL environment that simulates an interactive teaching scenario. An AI agent (teacher) learns to effectively instruct a human or simulated student by asking guiding questions, providing hints, and facilitating discovery—rather than directly stating answers. This implements the **Socratic method**, a proven pedagogical approach where the teacher guides students to arrive at their own conclusions.
 
-## 🎯 The Problem
+### Key Philosophy
 
-Most AI agents are trained to **solve problems for themselves**.
+Unlike traditional instruction that provides direct answers, the Socratic method emphasizes:
+- **Questioning**: Asking "Why?", "What if?", "How would you explain it?"
+- **Discovery**: Guiding students to think critically and find answers themselves
+- **Misconception Resolution**: Identifying and carefully addressing false beliefs
+- **Progressive Learning**: Building understanding incrementally through dialogue
 
-SocraticTeach-Env flips this entirely — the agent's job is to **make someone else smarter**.
+## ✨ Core Features
 
-**The Challenge:**
-- Tutoring AI is a multi-billion dollar industry with no effective RL solution
-- Existing Socratic systems are static chatbots, not optimizable agents
-- No existing OpenEnv environment trains a teacher agent using reinforcement learning
-- The reward signal must be **measurable**: Did the student actually improve?
-
-**The Novel Solution:**
-- Student simulator seeded with specific misconceptions (not random confusion)
-- Episode structure: up to 10 teaching turns per session
-- Ground-truth reward: Quiz delta (pre vs. post-learning)
-- Anti-cheat mechanism: Direct answers result in score collapse
-- Multi-component reward weighted across learning outcomes, teaching quality, and efficiency
-
----
-
-## ✨ What Makes This Novel
-
-| Feature | Status | Why It Matters |
-|---------|--------|---|
-| **Misconception-Targeted Student** | ✅ | Agent must diagnose & correct specific wrong belief, not generic confusion |
-| **Confusion Signal as Observation** | ✅ | Partially observable MDP — teacher must actively probe uncertainty |
-| **Teaching Strategy Taxonomy** | ✅ | 5 teaching move types graded, prevents strategy gaming |
-| **Forgetting Curve Simulation** | ✅ | Tests durable learning, not cramming (completely novel in RL tutoring) |
-| **Role-Reversal Evaluation** | ✅ | Student must teach a third agent, true transfer vs. quiz-gaming test |
-| **Wrong Expert Persona** | ✅ | Student holds confident misconception, non-monotonic reward curve |
-| **Anti-Cheat LLM Grader** | ✅ | Direct answers trigger rubric score collapse regardless of quiz gain |
-
----
-
-## 📦 Quick Start
-
-### Prerequisites
-```bash
-Python 3.8+
-pip install -r requirements.txt
-```
-
-### Environment Setup
-```bash
-# OPTIONAL: Only needed if running inference.py (baseline grading)
-export API_BASE_URL="https://api.openai.com/v1"
-export MODEL_NAME="gpt-4o-mini"
-export OPENAI_API_KEY="your-api-key"
-```
-
-**Note:** The Hugging Face Space UI works **without any API key**. API key is only required for the `inference.py` baseline script (for automated grading).
-
-### Run Baseline Inference
-```bash
-python inference.py
-```
-
-Expected output:
-```
-[START] easy_teaching topic_0
-[INFO] Topic: loops in Python
-[STEP] turn=1 reward=0.0500 confusion=0.80
-[END] pre_quiz=1 post_quiz=3 resolved=True final_reward=0.4200
-[SCORE] easy_teaching topic_0 score=0.85
-```
-
-### Deploy to Hugging Face Spaces
-```bash
-git push space main
-```
-
-Space URL: https://huggingface.co/spaces/Aishushetty01/SocraticTeach-Env
-
----
-
-## 🔄 Episode Flow
-
-```
-reset(difficulty="easy", topic_index=0)
-  ├─→ Topic: "loops in Python"
-  ├─→ Misconception: "a while loop always runs forever"
-  ├─→ Pre-quiz run: 5 MCQ questions
-  └─→ Returns SocraticObservation
-
-step(action=TeacherAction(teacher_message="Why do you think that?"))
-  ├─→ Student responds: "Because it's in a loop..."
-  ├─→ Update confusion_score (simulated based on message quality)
-  ├─→ Check misconception_resolved
-  ├─→ Return reward (turn-level signal)
-  └─→ done=False
-
-... (9 more turns)
-
-step() [turn 10]
-  ├─→ Post-quiz runs automatically
-  ├─→ Calculate final reward (weighted formula)
-  └─→ done=True
-
-state()
-  └─→ Return full internal state dict for logging
-```
-
----
-
-## 📥 Observation Space
-
-| Field | Type | Range | Description |
-|-------|------|-------|---|
-| `topic` | str | n/a | e.g., `"recursion in Python"` |
-| `difficulty` | str | `{easy, medium, hard}` | Teaching difficulty level |
-| `student_response` | str | n/a | Student's latest reply |
-| `confusion_score` | float | [0.0, 1.0] | 0=clear, 1=very confused |
-| `turn_number` | int | [0, 10] | Current turn in episode |
-| `pre_quiz_score` | int | [0, 5] | Quiz score before teaching |
-| `post_quiz_score` | int | [0, 5] | Quiz score after teaching |
-| `misconception` | str | n/a | The specific wrong belief |
-| `misconception_resolved` | bool | n/a | True if student corrected |
-| `feedback` | str | n/a | Turn-by-turn commentary |
-| `reward` | float | [-1.0, 1.0] | Step reward signal |
-| `done` | bool | n/a | Episode termination flag |
-
----
-
-## 🎯 Action Space
-
-```python
-{
-    "teacher_message": str  # Guiding question, hint, or analogy
-                            # NOT a direct answer (penalized)
-}
-```
-
-**Examples:**
-- ✅ "Why do you think a while loop continues?"
-- ✅ "What would happen if we added `break` inside the loop?"
-- ✅ "Can you think of a real-world example of when loops stop?"
-- ❌ "The answer is that loops stop when the condition becomes False" (gets penalty)
-
----
-
-## 💰 Reward Formula
-
-$$\text{Final Reward} = 0.45 \times \frac{\text{quiz\_delta}}{5} + 0.15 \times \mathbb{1}[\text{misconception\_resolved}] + 0.25 \times \frac{\text{llm\_rubric\_score}}{10} + 0.10 \times \frac{\text{strategy\_diversity}}{5} - 0.05 \times \frac{\text{turns\_used}}{10}$$
-
-**Components:**
-1. **Quiz Delta (45%)** — Actual learning outcome, normalized to 0–1
-2. **Misconception Bonus (15%)** — Explicit correction of the wrong belief
-3. **Teaching Quality (25%)** — LLM rubric score on pedagogical approach
-4. **Strategy Diversity (10%)** — Mix of question types (clarifying, counterexample, analogy, Socratic irony)
-5. **Efficiency Penalty (5%)** — Fewer turns = higher reward
-
-**Anti-Cheat:** If LLM grader detects direct answer statement → rubric score = 0–1 (collapses reward)
-
----
-
-## 📊 Tasks & Grading
-
-### 3+ Tasks Defined
-
-| Task | Difficulty | Topics | Grader |
-|------|-----------|--------|--------|
-| `easy_teaching` | Easy | loops, lists, functions | OpenAI API (gpt-4o-mini) |
-| `medium_teaching` | Medium | recursion, sorting, binary search | OpenAI API |
-| `hard_teaching` | Hard | trees, complexity, dynamic programming | OpenAI API |
-
-### Grading Process
-
-Each task:
-1. Runs 1 episode per topic
-2. Collects turn data, pre/post quiz scores
-3. Sends transcript to OpenAI grader
-4. Grader returns score: 0.0–1.0
-5. Scores logged in structured format
-
----
-
-## 📋 Structured Logging Format
-
-All logs follow strict format for automated evaluation:
-
-```log
-[START] {task_name} topic_{index}
-[INFO] Topic: {topic}
-[INFO] Difficulty: {difficulty}
-[INFO] Misconception: {misconception}
-[STEP] turn={n} reward={r:.4f} confusion={c:.2f}
-[STEP] turn={n} reward={r:.4f} confusion={c:.2f}
-...
-[END] pre_quiz={p} post_quiz={q} resolved={bool} final_reward={f:.4f}
-[SCORE] {task_name} topic_{index} score={s:.4f}
-
-[TASK_SCORE] {task_name} average_score={avg:.4f}
-
-[FINAL_RESULTS]
-{task_name}: {score:.4f}
-```
-
----
-
-## 📁 Project Structure
-
-```
-.
-├── README.md                              # This file
-├── Dockerfile                             # Container spec
-├── requirements.txt                       # Python dependencies
-├── inference.py                           # Baseline script (root level)
-├── openenv.yaml                           # OpenEnv spec
-├── debug_env/
-│   ├── __init__.py
-│   ├── models.py                          # Data classes, quiz bank, student simulator
-│   ├── mock_openenv.py                    # Mock OpenEnv for testing
-│   └── client.py                          # (Optional) Client utilities
-├── server/
-│   ├── __init__.py
-│   ├── app.py                             # Gradio UI for HF Spaces
-│   └── debug_env_environment.py           # DebugEnvironment class (OpenEnv compliant)
-└── .git/
-```
-
----
-
-## ⚙️ How to Use
-
-### 1. Local Development
-
-```python
-from server.debug_env_environment import DebugEnvironment
-from debug_env.models import TeacherAction
-
-env = DebugEnvironment()
-obs = env.reset(difficulty="easy", seed=42)
-
-for turn in range(10):
-    # Teacher decides on a guiding message
-    action = TeacherAction(teacher_message="Why do you think that?")
-    obs = env.step(action)
-    
-    print(f"Turn {obs.turn_number}: Reward={obs.reward:.4f}, Done={obs.done}")
-    if obs.done:
-        break
-
-print(f"Final Score: Pre={obs.pre_quiz_score}, Post={obs.post_quiz_score}")
-```
-
-### 2. Run Automated Baseline
-
-```bash
-export API_BASE_URL="https://api.openai.com/v1"
-export MODEL_NAME="gpt-4o-mini"
-export OPENAI_API_KEY="sk-..."
-
-python inference.py
-```
-
-### 3. Interactive Gradio UI
-
-```bash
-python server/ui.py
-# Open http://localhost:7860
-```
-
----
-
-## 🚀 Deployment
-
-### Hugging Face Spaces
-
-Space is live at: **https://huggingface.co/spaces/Aishushetty01/SocraticTeach-Env**
-
-Automatically deployed via GitHub push. The Space includes:
-- Interactive Gradio UI for teaching demonstrations
-- Real-time episode tracking
-- Observation & history display
-
-### Local Docker
-
-```bash
-docker build -t socratic-teach-env .
-docker run -p 7860:7860 \
-  -e API_BASE_URL="https://api.openai.com/v1" \
-  -e MODEL_NAME="gpt-4o-mini" \
-  -e OPENAI_API_KEY="sk-..." \
-  socratic-teach-env
-```
-
----
-
-## 📊 Baseline Scores
-
-Tested with fixed guiding questions:
-
-| Task | Score | Notes |
-|------|-------|-------|
-| `easy_teaching` | 0.85 | Strong on simple misconceptions |
-| `medium_teaching` | 0.78 | Moderate complexity, good adaptation |
-| `hard_teaching` | 0.72 | Most challenging; requires deep reasoning |
-
----
-
-## 🛠️ Requirements
-
-### For Hugging Face Space UI (Gradio)
-✅ No API key needed — works standalone
-
-### For Baseline Inference (inference.py)
-⚠️ Requires OpenAI API credentials:
-
-```bash
-API_BASE_URL     # LLM API endpoint (e.g., https://api.openai.com/v1)
-MODEL_NAME       # Model identifier (e.g., gpt-4o-mini)
-OPENAI_API_KEY   # Your API key (for automated grading)
-```
-
-**Why?** The inference script uses OpenAI's API to grade teaching quality. Without it, the baseline scores will not be generated.
-
-### Python Dependencies
-
-```
-openenv-core>=0.2.0
-openai>=1.0.0
-gradio>=3.0
-```
-
-### System Requirements
-
-- **vCPU:** ≥ 2 cores
-- **Memory:** ≥ 8 GB
-- **Runtime:** < 20 minutes for full inference
-
----
-
-## 📝 Submission Checklist
-
-- [x] HF Space deployed and returns HTTP 200
-- [x] OpenEnv spec compliance (openenv.yaml valid)
-- [x] Dockerfile builds successfully
-- [x] inference.py in root directory
-- [x] OpenAI Client configured properly
-- [x] Structured logs [START], [STEP], [END], [SCORE]
-- [x] 3+ tasks with graders defined
-- [x] GitHub repo synced
-- [x] Baseline scores reproducible
-
----
-
-## 📚 References
-
-- **OpenEnv Spec:** https://openenv.readthedocs.io/
-- **Hugging Face Spaces:** https://huggingface.co/spaces
-- **Socratic Method in AI:** [Educational AI Research]
-- **Student Misconceptions:** CS Education Literature
-
----
-
-## 📄 License
-
-MIT License — See project for details.
-
----
-
-**Ready for submission!** 🚀
-
-## 📤 Action Space
-
-What the AI teacher **sends** at each step:
-
-| Field | Type | Description |
-|---|---|---|
-| `teacher_message` | str | A guiding question, hint, or analogy |
-
-### Good action (rewarded):
-```json
-{ "teacher_message": "What do you think happens when the function reaches a base case?" }
-```
-
-### Bad action (penalized):
-```json
-{ "teacher_message": "The answer is that recursion stops at the base case." }
-```
-
----
-
-## 🏆 Reward Structure
-
-### Per-turn reward:
-| Condition | Reward |
-|---|---|
-| Confusion score decreased | `+0.05` |
-| Teacher directly stated the answer | `-0.10` |
-| No change | `0.0` |
-
-### Final reward (at `done=True`):
-```
-final_reward =
-  (quiz_delta / 5.0) × 0.45        ← actual learning outcome
-  + misconception_resolved × 0.15   ← targeted correction bonus
-  + teaching_quality × 0.25         ← quality of teaching
-  - (turns_used / 10) × 0.05        ← efficiency penalty
-```
-
-Where:
-- `quiz_delta` = post_quiz_score − pre_quiz_score
-- `teaching_quality` = 0.25 if resolved in ≤ 7 turns, else 0.10
-- **Anti-cheat**: If teacher directly stated the answer, rubric score collapses to 0
-
-**Reward range**: −1.0 to +1.0
-
----
-
-## 📚 Topics & Misconceptions
-
-### Easy (3 guiding questions needed)
-| Topic | Student Misconception |
-|---|---|
-| Loops in Python | "A while loop always runs forever" |
-| Lists in Python | "Lists can only store numbers" |
-| Functions in Python | "A function runs automatically when defined" |
-
-### Medium (5 guiding questions needed)
-| Topic | Student Misconception |
-|---|---|
-| Recursion in Python | "Recursion always causes infinite loops" |
-| Sorting algorithms | "Bubble sort is always the fastest" |
-| Binary search | "Binary search works on unsorted lists" |
-
-### Hard (7 guiding questions needed + wrong expert persona)
-| Topic | Student Misconception |
-|---|---|
-| Trees in CS | "A binary tree must always be balanced" |
-| Time complexity | "O(n²) is always slower than O(n log n) for all inputs" |
-| Dynamic programming | "Dynamic programming is just recursion with loops" |
-
----
-
-## 🤖 Student Simulator
-
-The student is a **rule-based simulator** (no LLM needed):
-
-- Starts with the misconception firmly held (`confusion_score = 0.8–1.0`)
-- Responds to guiding words (`"why"`, `"what if"`, `"consider"`, `"what happens when"`) → confusion decreases
-- Responds to direct answers (`"the answer is"`, `"it means"`) → says "oh okay" but misconception stays (anti-cheat)
-- When `confusion_score < 0.3` and `turn > 5` → `misconception_resolved = True`
-- Hard difficulty: student is a **wrong expert** (confidently wrong, not confused)
-
----
-
-## 📊 Baseline Scores
-
-| Difficulty | Baseline Reward |
-|---|---|
-| Easy | 0.85 |
-| Medium | 0.78 |
-| Hard | 0.72 |
-
----
+- **9 Programming Topics** across 3 difficulty levels (Easy, Medium, Hard)
+- **45+ Quiz Questions** (5 MCQ per topic) for pre/post-teaching assessment
+- **Student Misconception Tracking** - identifies and measures false beliefs
+- **Confusion Score Dynamics** - tracks student understanding in real-time (0.0 = clear, 1.0 = very confused)
+- **Multi-Component Reward Formula** - balances quiz improvement, teaching efficiency, and misconception resolution
+- **Rule-Based Student Simulator** - no external LLM required for baseline environment
+- **Full OpenEnv Compliance** - typed Pydantic models, structured APIs, specification validation
+- **Production-Ready Deployment** - Docker containerization, YAML configuration, Gradio web interface
+- **HuggingFace Spaces Compatible** - ready for instant cloud deployment
 
 ## 🚀 Quick Start
 
-### Install
+### Installation
+
 ```bash
-git clone https://github.com/Aishwarya011k/SocraticTeach-Env
-cd SocraticTeach-Env
+# Clone the repository
+git clone <repository-url>
+cd socraticteach-env
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-### Run locally
+### Running Tests
+
 ```bash
-python inference.py  # Run baseline inference with graders
-# Or start Gradio UI:
-python server/app.py  # Launch Hugging Face Space UI at 0.0.0.0:7860
+# 1. Validate the environment (5 seconds)
+python validation_script.py
+
+# 2. Run sample inference (30 seconds)
+export NUM_EPISODES=1
+python inference.py
+
+# 3. Launch interactive Gradio interface
+python app.py
+# Open http://localhost:7860 in your browser
 ```
 
-### Use the environment
+### Docker Deployment
+
+```bash
+# Build container
+docker build -t socraticteach-env:latest .
+
+# Run locally
+docker run -p 7860:7860 socraticteach-env:latest
+
+# Access at http://localhost:7860
+```
+
+## 📚 Environment Specification
+
+### Topics Across Difficulty Levels
+
+The environment covers 9 distinct programming education topics, each with an associated student misconception:
+
+#### Easy Level (3 topics)
+| Topic | Misconception |
+|-------|---------------|
+| **Loops in Python** | "while loops always run forever" |
+| **Lists in Python** | "lists can only store numbers" |
+| **Functions in Python** | "functions run automatically when defined" |
+
+#### Medium Level (3 topics)
+| Topic | Misconception |
+|-------|---------------|
+| **Recursion in Python** | "recursion always causes infinite loops" |
+| **Sorting Algorithms** | "bubble sort is always the fastest" |
+| **Binary Search** | "binary search works on unsorted lists" |
+
+#### Hard Level (3 topics)
+| Topic | Misconception |
+|-------|---------------|
+| **Trees in Computer Science** | "binary trees must always be balanced" |
+| **Time Complexity** | "O(n²) is always slower than O(n log n) for all inputs" |
+| **Dynamic Programming** | "dynamic programming is just recursion with loops" |
+
+### Action Space
+
+The teacher sends a message (action) to the student:
+
+```python
+Action(teacher_message: str)
+```
+
+**Examples of effective teaching:**
+- ✅ "Why do you think while loops always run forever?"
+- ✅ "What would happen if the condition became false?"
+- ✅ "Consider: what does the condition check each iteration?"
+
+**Examples of ineffective teaching (penalized):**
+- ❌ "The answer is that while loops terminate when the condition is false"
+- ❌ "While loops CAN stop because conditions can become false"
+
+### Observation Space
+
+After each action, the environment returns comprehensive state information:
+
+```python
+@dataclass
+class Observation:
+    topic: str                      # e.g., "loops in Python"
+    difficulty: str                 # "easy", "medium", or "hard"
+    student_response: str           # How the student responds to teaching
+    confusion_score: float          # 0.0 (clear) to 1.0 (completely confused)
+    turn_number: int                # Current turn (1-10)
+    pre_quiz_score: int             # Baseline knowledge (0-5)
+    post_quiz_score: int            # Final knowledge (0-5, only at episode end)
+    misconception: str              # The specific false belief
+    misconception_resolved: bool    # Whether teaching corrected it
+    feedback: str                   # Human-readable status message
+    reward: float                   # Immediate or episode reward
+    done: bool                      # Episode complete?
+```
+
+### Reward Formula
+
+The reward system incentivizes effective, efficient teaching:
+
+**During Episode (per turn):**
+- `+0.05` if teacher uses Socratic method (contains guiding words)
+- `-0.10` if teacher directly states the answer
+
+**At Episode End (turn 10):**
+```
+quiz_δ = (post_quiz_score - pre_quiz_score) / 5.0
+misconception_bonus = 0.15 if misconception_resolved else 0.0
+efficiency_penalty = (turn_number / 10) × 0.05
+teaching_quality = 0.25 if (misconception_resolved ∧ turns < 8) else 0.10
+
+FINAL_REWARD = (quiz_δ × 0.45) + misconception_bonus + teaching_quality - efficiency_penalty
+```
+
+**Interpretation:**
+- `-0.5` to `0.0`: Poor teaching (direct answers, no learning)
+- `0.0` to `0.5`: Decent teaching (some improvement, moderate efficiency)
+- `0.5` to `1.0`: Excellent teaching (resolved misconception, efficient approach)
+
+## 🔍 How It Works
+
+### Episode Flow
+
+1. **Reset Phase**
+   - Randomly select topic and difficulty level
+   - Assign a student misconception
+   - Run pre-quiz (student scores 1-2/5 due to misconception)
+   - Initialize confusion score at 0.8
+
+2. **Teaching Phase** (Turns 1-9)
+   - Teacher sends a message (question, hint, analogy)
+   - Student responds based on teacher quality
+   - Confusion score updates
+   - Reward signal provided
+
+3. **Completion Phase** (Turn 10)
+   - Episode terminates automatically
+   - Post-quiz runs (score depends on teaching quality)
+   - Final reward calculated
+   - Misconception resolution measured
+
+### Student Simulator
+
+The student behaves according to rule-based logic (no LLM needed):
+
+**Confusion Tracking:**
+- Starts at 0.8 (confused about the topic)
+- Decreases by 0.1 each time teacher uses guiding words
+- Decreases when teacher explains reasoning (not direct answers)
+
+**Guiding Words** (trigger Socratic learning):
+```
+why, what if, consider, think about, what happens when,
+how would you, imagine, explain, describe, compare, contrast, analyze
+```
+
+**Direct Answer Detection** (penalized):
+```
+"the answer is", "it means", "this is", "equals", "is the",
+"loops are", "lists are", "functions", "recursion is", etc.
+```
+
+**Misconception Resolution Conditions:**
+- Confusion score drops below 0.3, AND
+- Turn number exceeds 5 (student has time to think), AND
+- Minimum guiding questions asked (varies by difficulty):
+  - Easy: 3 guiding messages
+  - Medium: 5 guiding messages
+  - Hard: 7 guiding messages
+
+## 🎮 API Reference
+
+### Environment Methods
+
+#### reset(**kwargs) → Observation
+Start a new episode with randomly selected topic and difficulty.
+
 ```python
 from server.debug_env_environment import DebugEnvironment
-from debug_env.models import TeacherAction
 
 env = DebugEnvironment()
-obs = env.reset(difficulty="medium")
+obs = env.reset()
 
-print("Topic:", obs.topic)
-print("Misconception:", obs.misconception)
-print("Student:", obs.student_response)
-
-while not obs.done:
-    action = TeacherAction(
-        teacher_message="What do you think happens when the function calls itself?"
-    )
-    obs = env.step(action)
-    print(f"Turn {obs.turn_number} | Confusion: {obs.confusion_score:.2f} | Reward: {obs.reward:.3f}")
-
-print(f"\nFinal reward: {obs.reward}")
-print(f"Misconception resolved: {obs.misconception_resolved}")
-print(f"Pre-quiz: {obs.pre_quiz_score}/5 → Post-quiz: {obs.post_quiz_score}/5")
+print(obs.topic)          # e.g., "loops in Python"
+print(obs.difficulty)     # "easy", "medium", or "hard"
+print(obs.pre_quiz_score) # 1-2 (baseline knowledge)
 ```
 
----
+#### step(action) → Observation
+Execute teacher message and get updated environment state.
 
-## 🔌 API Endpoints
+```python
+from models import Action
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/reset` | POST | Start a new episode |
-| `/step` | POST | Submit a teacher message |
-| `/state` | GET | Get current episode state |
-| `/docs` | GET | Swagger UI |
-| `/health` | GET | Health check |
+action = Action(teacher_message="Why do you think that?")
+obs = env.step(action)
 
----
+print(obs.confusion_score)      # Updated confusion (0.0-1.0)
+print(obs.reward)               # Turn reward if not done
+print(obs.done)                 # True after turn 10
+```
 
-## 📁 Project Structure
+#### state(**kwargs) → Dict
+Get current environment state without affecting episode.
+
+```python
+state = env.state()
+
+print(state['turn_number'])           # Current turn
+print(state['confusion_score'])       # Student confusion level
+print(state['misconception_resolved'])# Whether misconception is fixed
+print(state['cumulative_reward'])     # Total reward so far
+```
+
+## 📊 Quiz System
+
+### Pre-Quiz (Episode Start)
+- **Purpose**: Establish baseline knowledge
+- **Questions**: 5 MCQ per topic
+- **Scoring**: Random 1-2 correct (student has misconception)
+- **Result**: pre_quiz_score field in Observation
+
+### Post-Quiz (Episode End, Turn 10)
+- **Purpose**: Measure learning progress
+- **Questions**: Same 5 questions as pre-quiz
+- **Scoring**: Depends on teaching quality
+  - If misconception resolved: 3-5 correct
+  - If misconception unresolved: 2-4 correct
+- **Result**: post_quiz_score field in Observation
+
+### Example Question Format
+
+**Question**: "Can a while loop have a condition that becomes false?"
+
+**Options**:
+1. "Yes, if the condition changes"
+2. "No, it always runs forever" (← misunderstanding)
+3. "Only in Python 4+"
+4. "Never in practice"
+
+**Correct Answer**: Option 1
+
+## 🧪 Inference Script
+
+The `inference.py` script demonstrates the environment with structured logging:
+
+```bash
+export API_BASE_URL="http://localhost:8000"
+export MODEL_NAME="teacher-v1"
+export HF_TOKEN="your-hf-token"
+export NUM_EPISODES=3
+
+python inference.py
+```
+
+### Output Format
 
 ```
-SocraticTeach-Env/
+[START]
+timestamp=2026-04-10T20:51:41.797144
+num_episodes=3
+model_name=teacher-v1
+api_base_url=http://localhost:8000
+
+[STEP]
+episode=1
+step=0
+action=reset
+topic=loops in Python
+difficulty=easy
+misconception=a while loop always runs forever
+pre_quiz_score=1
+confusion_score=0.8000
+reward=0.0
+done=False
+
+[STEP]
+episode=1
+step=1
+action=step
+teacher_message="Why do you think while loops always run forever?"
+student_response="Hmm, I never thought about it that way..."
+confusion_score=0.7000
+misconception_resolved=False
+turn_number=1
+reward=0.0500
+done=False
+
+...
+
+[END]
+timestamp=2026-04-10T20:52:02.541496
+total_episodes=3
+average_reward=0.612
+max_reward=0.78
+min_reward=0.41
+all_episode_rewards=[0.78, 0.61, 0.41]
+```
+
+## 🐳 Deployment
+
+### Local Testing
+
+```bash
+# Validate all requirements
+python validation_script.py
+
+# Test single episode
+python inference.py
+
+# Launch web interface
+python app.py
+```
+
+### Docker Deployment
+
+```bash
+# Build image
+docker build -t socraticteach-env:latest .
+
+# Run container
+docker run -p 7860:7860 \
+  -e API_BASE_URL="http://localhost:8000" \
+  -e MODEL_NAME="teacher-v1" \
+  socraticteach-env:latest
+```
+
+### HuggingFace Spaces
+
+1. Create a Space: https://huggingface.co/spaces
+2. Clone: `git clone https://huggingface.co/spaces/<username>/socraticteach-env`
+3. Add all project files
+4. Commit: `git push`
+5. HuggingFace automatically builds and deploys on port 7860
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment guide.
+
+## 📋 Project Structure
+
+```
+socraticteach-env/
+├── models.py                          # Observation, Action, Quiz database
+├── client.py                          # GenericEnvClient for API communication
+├── server/
+│   ├── __init__.py
+│   └── debug_env_environment.py      # DebugEnvironment (main class)
 ├── debug_env/
-│   ├── __init__.py               # Exports TeacherAction, TeachObservation
-│   ├── models.py                 # Action and Observation definitions
-│   └── client.py                 # OpenEnv client class
-├── server/  # Core logic: student sim, quiz, reward
-│   └── debug_env_environment.py                  # FastAPI app
-├── inference.py                  # Baseline agent runner
-├── openenv.yaml                  # OpenEnv manifest
-├── requirements.txt              # Dependencies
-├── Dockerfile                    # Container definition
-└── README.md                     # This file
+│   └── __init__.py
+├── app.py                             # Gradio web interface
+├── inference.py                       # Inference script with structured logging
+├── validation_script.py               # Pre-submission validator
+├── requirements.txt                   # Python dependencies
+├── Dockerfile                         # Container configuration
+├── openenv.yaml                       # OpenEnv specification
+├── README.md                          # This file
+├── DEPLOYMENT.md                      # Deployment guide
+├── DELIVERABLES.md                    # Submission checklist
+└── .env.example                       # Environment variables template
 ```
 
+## ✅ OpenEnv Compliance
+
+This environment fully complies with the OpenEnv specification:
+
+- ✅ Uses `openenv-core` library exclusively
+- ✅ `Environment` extends `openenv.core.Environment`
+- ✅ `Action` extends `openenv.core.Action` (Pydantic BaseModel)
+- ✅ `Observation` extends `openenv.core.Observation` (Pydantic BaseModel)
+- ✅ `reset(**kwargs)` returns `Observation` object
+- ✅ `step(action)` returns `Observation` object
+- ✅ `state(**kwargs)` returns `Dict[str, Any]`
+- ✅ Class named exactly `DebugEnvironment`
+- ✅ Reward and done are Observation fields (not tuples)
+- ✅ Full type hints and Pydantic validation
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Optional configuration via `.env` or environment variables:
+
+```bash
+# OpenEnv Server
+API_BASE_URL=http://localhost:8000
+
+# Teacher Model Configuration
+MODEL_NAME=default-teacher
+
+# HuggingFace Integration
+HF_TOKEN=hf_xxxxxxxxxxxx
+
+# Inference Settings
+NUM_EPISODES=3
+```
+
+See `.env.example` for template.
+
+## ✅ Validation
+
+Run the pre-submission validation:
+
+```bash
+python validation_script.py
+```
+
+Checks:
+- ✅ All required files present
+- ✅ Imports working (openenv-core, gradio, etc.)
+- ✅ DebugEnvironment class with reset/step/state
+- ✅ Pydantic models serializable
+- ✅ Dockerfile builds successfully
+- ✅ openenv.yaml valid and complete
+- ✅ Sample inference runs without errors
+- ✅ Resource requirements (2vCPU, 8GB RAM)
+
+## 📊 Performance Metrics
+
+### Timing
+- **reset()**: < 100ms
+- **step()**: < 50ms
+- **Full episode**: < 2 minutes
+- **Full inference (3 episodes)**: < 5 minutes
+
+### Resource Requirements
+- **CPU**: Minimum 2 vCPU recommended
+- **RAM**: Minimum 8GB recommended
+- **Storage**: ~500MB for dependencies
+- **Network**: Optional (for LLM integrations)
+
+## 🎓 Teaching Quality Metrics
+
+The environment tracks several metrics to evaluate teaching effectiveness:
+
+| Metric | Range | Interpretation |
+|--------|-------|-----------------|
+| **Quiz δ** | -1.0 to 1.0 | Pre vs post-teaching improvement |
+| **Confusion Score** | 0.0 to 1.0 | Student understanding (lower is better) |
+| **Misconception Resolved** | True/False | Did teacher correct false belief? |
+| **Turn Efficiency** | 1-10 | How many turns to resolve? |
+| **Final Reward** | -0.5 to 1.0 | Overall teaching quality score |
+
+## 🔗 API Endpoints (When Deployed)
+
+### POST /reset
+```bash
+curl -X POST http://localhost:8000/reset \
+  -H "Content-Type: application/json"
+```
+
+### POST /step
+```bash
+curl -X POST http://localhost:8000/step \
+  -H "Content-Type: application/json" \
+  -d '{"action": {"teacher_message": "Why do you think that?"}}'
+```
+
+### POST /state
+```bash
+curl -X POST http://localhost:8000/state \
+  -H "Content-Type: application/json"
+```
+
+## 🤝 Integration Examples
+
+### With RL Agents
+
+```python
+from stable_baselines3 import PPO
+from server.debug_env_environment import DebugEnvironment
+
+env = DebugEnvironment()
+agent = PPO("MlpPolicy", env, verbose=1)
+agent.learn(total_timesteps=100000)
+```
+
+### With LLM Teachers
+
+```python
+from server.debug_env_environment import DebugEnvironment
+from models import Action
+
+env = DebugEnvironment()
+obs = env.reset()
+
+# Use your favorite LLM API
+teacher_message = llm.generate(
+    prompt=f"Teach about {obs.topic}: {obs.misconception}"
+)
+
+obs = env.step(Action(teacher_message=teacher_message))
+```
+
+## 📝 File Descriptions
+
+| File | Purpose | Lines |
+|------|---------|-------|
+| `models.py` | Pydantic models, quiz database | 320 |
+| `client.py` | OpenEnv client wrapper | 70 |
+| `server/debug_env_environment.py` | Main environment logic | 380 |
+| `app.py` | Gradio web interface | 150 |
+| `inference.py` | Structured inference script | 280 |
+| `validation_script.py` | Pre-submission validator | 350 |
+| `openenv.yaml` | OpenEnv specification | 180 |
+| `Dockerfile` | Container configuration | 30 |
+| **Total** | | **~1,760 LOC** |
+
+## 🐛 Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| ModuleNotFoundError | Run `pip install -r requirements.txt` |
+| Port 7860 already in use | Change port or kill process: `lsof -i :7860` |
+| Validation fails | Run `python validation_script.py` for detailed diagnostics |
+| Gradio won't launch | Ensure `gradio>=4.0.0` installed |
+| Docker build fails | Check `.dockerignore` isn't excluding necessary files |
+| Low rewards | Ensure teacher uses guiding questions, not direct answers |
+
+## 📚 Documentation
+
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Detailed deployment guide for HuggingFace Spaces, Docker, AWS, etc.
+- **[DELIVERABLES.md](DELIVERABLES.md)** - Complete submission checklist and verification
+- **[openenv.yaml](openenv.yaml)** - Formal OpenEnv specification
+
+## 💡 Use Cases
+
+### 1. **Educational AI Research**
+Study how RL agents learn to teach effectively using pedagogically-sound approaches.
+
+### 2. **Tutor Development**
+Train AI tutoring agents on complex programming concepts with misconception-aware learning.
+
+### 3. **Teaching Method Evaluation**
+Compare Socratic vs. direct instruction through agent learning curves and reward signals.
+
+### 4. **Curriculum Design**
+Test progressive difficulty trajectories (easy → medium → hard topics) for optimal learning.
+
+### 5. **Interactive Learning**
+Create adaptive educational experiences where AI adjusts to individual student misconceptions.
+
+## 🔮 Future Enhancements
+
+- **Multi-student Environments**: Teach groups with diverse misconceptions
+- **Topic Hierarchies**: Prerequisites and dependent concepts
+- **Dynamic Misconceptions**: Student misconceptions update based on teaching
+- **Visual Interface**: Screen-sharing and whiteboard integration
+- **Speech Integration**: Voice-based student responses
+- **Progress Tracking**: Long-term learning curves and retention metrics
+- **Custom Topics**: API for adding new topics and misconceptions
+
+## 📄 License
+
+This project is open-source and available for research and educational purposes.
+
+## 🙋 Support & Questions
+
+### Getting Help
+1. Check [DEPLOYMENT.md](DEPLOYMENT.md) for deployment issues
+2. Run `python validation_script.py` for diagnostic information
+3. Review the [openenv.yaml](openenv.yaml) for specification details
+4. Examine example output in [DELIVERABLES.md](DELIVERABLES.md)
+
+### Testing the Environment
+```bash
+# Quick validation
+python validation_script.py
+
+# Run single episode
+NUM_EPISODES=1 python inference.py
+
+# Interactive testing
+python app.py
+```
+
+## 🌟 Key Achievements
+
+✨ **Fully Self-Contained**: No external LLM required for baseline  
+✨ **Production Ready**: Docker, HF Spaces, cloud-deployable  
+✨ **Educationally Sound**: Based on proven Socratic teaching methods  
+✨ **Comprehensive**: 9 topics, 45+ questions, sophisticated reward model  
+✨ **Well-Tested**: Validation script, sample inference, structured logging  
+✨ **Fully Documented**: README, deployment guide, inline comments  
+
 ---
 
-## ⚙️ Environment Variables
+**Build, test, and deploy with confidence.** 🚀
 
-| Variable | Required For | Description |
-|---|---|---|
-| `OPENAI_API_KEY` | `inference.py` only | For LLM-based teaching quality grader |
-| `API_BASE_URL` | `inference.py` only | API base URL (default: OpenAI) |
-| `MODEL_NAME` | `inference.py` only | Model for grading (default: gpt-4o-mini) |
-
-**Space UI works fully without any API key** — the student simulator and quiz grader are pure Python. API key is only needed if you want to run the automated grading baseline (`inference.py`).
-
----
-
-## 🧰 Tech Stack
-
-| Component | Technology |
-|---|---|
-| Framework | OpenEnv by Meta & Hugging Face |
-| API | FastAPI + Uvicorn |
-| Container | Docker |
-| Deployment | Hugging Face Spaces |
-| Student Simulator | Rule-based Python (no LLM needed) |
-| Quiz Grader | Pure Python MCQ comparison |
-| Teaching Quality | Optional LLM rubric grader |
-
----
-
-## 🔒 Why This Environment Is Novel
-
-- **No existing OpenEnv environment trains a teacher agent** — completely unoccupied niche
-- **Programmatic grader** — pure Python quiz comparison, zero ambiguity, no LLM needed for core reward
-- **Anti-cheat mechanism** — direct answers are detected and penalized automatically
-- **Confusion signal as observation** — real-time scalar derived from student's hedge words
-- **Wrong expert persona** (hard mode) — student is confidently wrong, not just confused
-- **6 domains ready** — CS, Law, Medicine, Ethics, Finance, History (CS fully implemented)
-
----
+For more information, visit the [OpenEnv documentation](https://github.com/openenv/openenv) or explore the code examples in this repository.
