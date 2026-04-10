@@ -7,7 +7,6 @@ import uvicorn
 import json
 import sys
 import os
-from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
@@ -15,8 +14,15 @@ from typing import Dict, Any, Optional
 # Add current directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from server.debug_env_environment import DebugEnvironment
-from models import Action, Observation
+# Import with error handling
+try:
+    from server.debug_env_environment import DebugEnvironment
+    from models import Action, Observation
+except ImportError as e:
+    print(f"[IMPORT WARNING] {e}")
+    DebugEnvironment = None
+    Action = None
+    Observation = None
 
 app = FastAPI(
     title="SocraticTeach-Env OpenEnv Server",
@@ -24,14 +30,19 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Global environment instance
-env = DebugEnvironment()
-current_obs: Optional[Observation] = None
+env = None
+current_obs = None
 
 
-class ResetRequest(BaseModel):
-    """Request model for reset endpoint."""
-    pass
+def get_env():
+    """Get or create environment instance."""
+    global env, current_obs
+    if env is None:
+        if DebugEnvironment is None:
+            raise RuntimeError("DebugEnvironment not available - import failed")
+        env = DebugEnvironment()
+        current_obs = env.reset()
+    return env
 
 
 class StepRequest(BaseModel):
@@ -39,19 +50,33 @@ class StepRequest(BaseModel):
     action: Dict[str, Any]
 
 
-class ObservationResponse(BaseModel):
-    """Response model for observation data."""
-    class Config:
-        arbitrary_types_allowed = True
-
-
 @app.on_event("startup")
 async def startup_event():
     """Initialize environment on server startup."""
-    global env, current_obs
-    env = DebugEnvironment()
-    current_obs = env.reset()
-    print("✅ OpenEnv Server started. Environment initialized.")
+    try:
+        get_env()
+        print("[STARTUP] ✅ OpenEnv Server started. Environment initialized.")
+    except Exception as e:
+        print(f"[STARTUP] ⚠️ Warning: {e}")
+
+
+@app.get("/")
+async def root():
+    """Root endpoint with API documentation."""
+    return {
+        "service": "SocraticTeach-Env OpenEnv Server",
+        "version": "1.0.0",
+        "status": "running",
+        "endpoints": {
+            "health": "GET /health",
+            "reset": "POST /openenv/reset",
+            "step": "POST /openenv/step",
+            "validate": "GET /openenv/validate",
+            "inference": "POST /openenv/inference",
+            "status": "GET /openenv/status",
+            "docs": "/docs"
+        }
+    }
 
 
 @app.get("/health")
@@ -69,10 +94,12 @@ async def reset_environment():
     """Reset the environment and start a new episode."""
     global env, current_obs
     try:
+        if DebugEnvironment is None:
+            raise RuntimeError("Environment not initialized")
+        
         env = DebugEnvironment()
         current_obs = env.reset()
         
-        # Convert Observation to dict for JSON serialization
         observation_dict = {
             "topic": current_obs.topic,
             "difficulty": current_obs.difficulty,
@@ -104,19 +131,16 @@ async def step_environment(request: StepRequest):
     global env, current_obs
     
     try:
-        if env.topic is None:
+        if env is None or DebugEnvironment is None:
             raise ValueError("Environment not initialized. Call /openenv/reset first.")
         
-        # Extract teacher_message from action dict
         teacher_message = request.action.get("teacher_message", "")
         if not teacher_message.strip():
             raise ValueError("teacher_message is required in action")
         
-        # Create Action and execute step
         action = Action(teacher_message=teacher_message)
         current_obs = env.step(action)
         
-        # Convert Observation to dict for JSON serialization
         observation_dict = {
             "topic": current_obs.topic,
             "difficulty": current_obs.difficulty,
@@ -148,15 +172,13 @@ async def step_environment(request: StepRequest):
 async def validate_environment():
     """Validate that the OpenEnv environment is properly configured."""
     try:
-        # Test reset
+        if DebugEnvironment is None:
+            return {"valid": False, "message": "Environment not available"}
+        
         test_env = DebugEnvironment()
         test_obs = test_env.reset()
-        
-        # Test step
         test_action = Action(teacher_message="Why do you think that?")
         test_obs = test_env.step(test_action)
-        
-        # Test state
         state = test_env.state()
         
         return {
@@ -184,9 +206,11 @@ async def validate_environment():
 async def run_inference(request: StepRequest):
     """Run a full inference episode with structured logging."""
     try:
+        if DebugEnvironment is None:
+            raise RuntimeError("Environment not available")
+        
         episode_logs = []
         
-        # Reset environment
         test_env = DebugEnvironment()
         obs = test_env.reset()
         
@@ -197,7 +221,6 @@ async def run_inference(request: StepRequest):
             "confusion": obs.confusion_score
         })
         
-        # Run up to 10 steps with sample messages
         sample_messages = [
             "Why do you think that?",
             "What would happen if you changed that?",
@@ -269,29 +292,10 @@ async def get_status():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/")
-async def root():
-    """Root endpoint with API documentation."""
-    return {
-        "service": "SocraticTeach-Env OpenEnv Server",
-        "version": "1.0.0",
-        "status": "running",
-        "endpoints": {
-            "health": "GET /health",
-            "reset": "POST /openenv/reset",
-            "step": "POST /openenv/step",
-            "validate": "GET /openenv/validate",
-            "inference": "POST /openenv/inference",
-            "status": "GET /openenv/status",
-            "docs": "/docs"
-        }
-    }
-
-
 if __name__ == "__main__":
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=8000,
+        port=7860,
         log_level="info"
     )
